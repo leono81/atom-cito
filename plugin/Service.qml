@@ -925,6 +925,21 @@ Item {
       return root.wander() ? "ok" : "sin huecos"
     }
 
+    // Teletransporta al perro sin caminar. Es lo único del proyecto que
+    // mueve la `x` sin pasar por una pose que se traslade, y existe para dos
+    // cosas puntuales: entrar en escena desde fuera de pantalla, y depurar.
+    // No lo usa ningún comportamiento automático.
+    function place(x: string): string {
+      var n = Number(x)
+      if (!isFinite(n)) return "nan"
+      root.trip = []
+      root.currentLeg = null
+      root.pendingTarget = NaN
+      mover.freeze()
+      mover.pos = n
+      return "ok"
+    }
+
     // Fuerza un paseo concreto en vez de sortearlo. Existe para la demo y
     // para depurar: el comportamiento normal es el sorteo.
     function walk(kind: string): string {

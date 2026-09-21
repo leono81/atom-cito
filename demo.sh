@@ -60,9 +60,19 @@ vivo() {
 
 # ── Los actos ───────────────────────────────────────────────────────────────
 
+# Se lo saca de pantalla ANTES de la cuenta regresiva, para que cuando
+# empieces a filmar la barra esté vacía y el perro aparezca caminando.
+esconder() { $ATOM place -40 >/dev/null 2>&1; }
+
+entrada() {
+  banner 0 "Entra en escena" "La barra está vacía. Mirá el borde izquierdo."
+  esperar 2
+  $ATOM walk stop >/dev/null      # camina hasta el primer hueco que le sirva
+  esperar 8
+}
+
 acto1() {
-  banner 1 "Vive en la barra" "Buscá al perro arriba. Respira, parpadea, y se queda en un hueco."
-  $ATOM pose stand >/dev/null
+  banner 1 "Vive en la barra" "Respira, parpadea, y se queda en su hueco."
   esperar 4
   dato "Y sabe cuánto hace que estás en lo mismo:"
   $ATOM hover 6 >/dev/null
@@ -207,26 +217,37 @@ acto13() {
 ACTOS=(acto1 acto2 acto3 acto4 acto5 acto6 acto7 acto8 acto9 acto10 acto11 acto12 acto13)
 
 titulos=(
-  "Vive en la barra" "Sabe en qué estás" "Conoce los huecos"
+  "Entra en escena" "Vive en la barra" "Sabe en qué estás" "Conoce los huecos"
   "De punta a punta" "La ronda" "La corrida" "La vuelta al mundo"
   "La cabriola" "El ciclo de ocio" "Le hace pis al reloj"
-  "Te habla" "Lo podés callar" "La regla dura"
+  "Te habla" "Lo podés callar" "La regla dura" "Y se va"
 )
 
 if [ "${1:-}" = "--list" ]; then
   printf '\n'
-  for i in "${!titulos[@]}"; do printf '  %2d · %s\n' "$((i + 1))" "${titulos[$i]}"; done
+  # El primero es el acto 0 (la entrada), así que la numeración arranca ahí.
+  for i in "${!titulos[@]}"; do printf '  %2d · %s\n' "$i" "${titulos[$i]}"; done
   printf '\n'
   exit 0
 fi
 
 vivo
 
+if [ "${1:-}" = "0" ]; then
+  esconder
+  sleep 1
+  entrada
+  printf '\n'
+  exit 0
+fi
+
 if [ -n "${1:-}" ]; then
   "acto${1}"
   printf '\n'
   exit 0
 fi
+
+esconder
 
 clear
 printf '\n%s%s' "$NEGRITA$ARENA" "$(linea ' ')"
@@ -236,12 +257,17 @@ printf '   %sPrendé la cámara. Arranca en...%s ' "$TEAL" "$FIN"
 for i in 5 4 3 2 1; do printf '%s%d %s' "$NARANJA" "$i" "$FIN"; sleep 1; done
 printf '\n'
 
+entrada
 for a in "${ACTOS[@]}"; do "$a"; done
 
+banner 14 "Y se va" "Sale de pantalla por el mismo borde por el que entró."
+$ATOM moveTo -40 >/dev/null
+esperar 9
+
 printf '\n\n%s%s%s\n' "$NARANJA" "$(linea '━')" "$FIN"
-printf '%s  Eso es todo. Ahora se queda ahí, dando vueltas.%s\n' "$NEGRITA$ARENA" "$FIN"
+printf '%s  Eso es todo. Ya vuelve solo.%s\n' "$NEGRITA$ARENA" "$FIN"
 printf '%s  Si molesta:  omarchy plugin disable leono.atom%s\n' "$TENUE" "$FIN"
 printf '%s%s%s\n\n' "$NARANJA" "$(linea '━')" "$FIN"
 
-# Que quede como estaba: hablando y parado.
-$ATOM pose stand >/dev/null 2>&1
+# Que no quede fuera de pantalla: vuelve a un hueco y sigue su vida.
+$ATOM walk stop >/dev/null 2>&1
