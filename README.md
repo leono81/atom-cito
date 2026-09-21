@@ -77,6 +77,18 @@ defecto:
 | click del medio | "volví de una pausa": reinicia los relojes |
 | hover | los dos relojes: app actual y sesión |
 
+## La demo
+
+```bash
+./demo.sh            # los trece actos, unos dos minutos
+./demo.sh 7          # solo uno
+./demo.sh --list     # cuáles hay
+```
+
+Está pensada para filmar: carteles grandes en la terminal diciendo qué mirar,
+y el perro haciéndolo arriba en la barra. Dejá la terminal en la mitad de
+abajo de la pantalla y apuntá la cámara a la pantalla entera.
+
 ## Documentación
 
 | Documento | Para qué |

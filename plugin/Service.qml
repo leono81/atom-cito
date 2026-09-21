@@ -362,6 +362,11 @@ Item {
     onTriggered: root.runNextLeg()
   }
 
+  property Timer hoverDemoTimer: Timer {
+    repeat: false
+    onTriggered: root.hovering = false
+  }
+
   // Cinco formas de pasear, sorteadas: mudarse de hueco, cruzar de punta a
   // punta, dar la vuelta por el borde de la pantalla, hacer la ronda parando
   // en cada hueco, o mandarse una corrida y volver.
@@ -918,6 +923,39 @@ Item {
 
     function wander(): string {
       return root.wander() ? "ok" : "sin huecos"
+    }
+
+    // Fuerza un paseo concreto en vez de sortearlo. Existe para la demo y
+    // para depurar: el comportamiento normal es el sorteo.
+    function walk(kind: string): string {
+      var g = root.barGeometry()
+      if (!g) return "sin geometría"
+      var stops = Gaps.restStops(g.barWidth, g.obstacles, root.dogWidth)
+      if (stops.length === 0) return "sin huecos"
+      var legs = Trips.planWalk(String(kind || "stop"), {
+        stops: stops,
+        barWidth: g.barWidth,
+        dogWidth: root.dogWidth,
+        currentX: mover.pos,
+        stop: Gaps.pickStop(stops, mover.pos, 40)
+      }, Math.random)
+      if (!legs || legs.length === 0) return "ese paseo no da tramos acá"
+      root.log("pasea: " + kind + " (a pedido)")
+      return root.startTrip(legs) ? "ok" : "no"
+    }
+
+    function cabriola(): string {
+      return root.cabriola() ? "ok" : "no hay pose jump"
+    }
+
+    // Muestra el globo del hover sin que haya un mouse encima.
+    function hover(seconds: string): string {
+      var s = Number(seconds)
+      root.hoverStamp = Date.now()
+      root.hovering = true
+      hoverDemoTimer.interval = Math.max(1000, (isFinite(s) ? s : 4) * 1000)
+      hoverDemoTimer.restart()
+      return "ok"
     }
 
     function pee(): string {
