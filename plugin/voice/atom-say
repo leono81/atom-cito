@@ -1,0 +1,326 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""atom-say — la voz de Atom.
+
+Recibe el contexto en JSON por argv e imprime UNA sola linea en castellano
+rioplatense. Si algo sale mal no imprime nada y sale con codigo != 0, para que
+el llamador caiga al banco de frases local sin tener que interpretar la salida:
+"degrada bien" es una propiedad del contrato, no del texto.
+
+  atom-say '{"intent":"...","app":"herdr","streakMinutes":47}'
+  atom-say --dry-run '{...}'      imprime el prompt y no llama a nadie
+  atom-say -                      lee el JSON de stdin
+
+Vive fuera de QML a proposito: el proceso del shell no puede bloquearse nunca,
+asi que esto se invoca como subproceso con timeout y se lo trata como una
+caja negra que puede fallar.
+"""
+
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import time
+
+MAX_CHARS = 140            # una linea de globo; mas que esto no se lee de reojo
+HISTORY_KEEP = 6           # cuantas frases previas se mandan como "no repitas"
+HISTORY_MAX_LINES = 200    # cuanto se deja crecer el archivo
+CLAUDE_TIMEOUT = 30        # Medido en esta maquina sobre 9 llamadas reales con
+                           # este prompt: 12 a 41 s (el "3 a 5 s" del plan es la
+                           # latencia de un prompt trivial; con la personalidad
+                           # puesta, no). 30 s cubre la mayoria y el que se pasa
+                           # cae al banco local, que es exactamente el plan B.
+MODEL = "claude-sonnet-5"
+
+# Nada de esto hace falta para escribir una frase de 140 caracteres, y cada
+# herramienta habilitada es una forma de que la llamada tarde mas o haga algo
+# que no le pedimos.
+DISALLOWED = ("Bash,Edit,Write,Read,NotebookEdit,Glob,Grep,WebSearch,WebFetch,"
+              "Task,TodoWrite,KillShell,BashOutput")
+
+SYSTEM_PROMPT = (
+    "Sos Atom: un perro que vive en la barra de estado de una computadora y que, "
+    "cada tanto, le dice algo corto a la persona que la usa. "
+    "Hablas en castellano rioplatense con voseo, incluidos los imperativos: "
+    "pará, tomá, estirate, mirá, levantate, acordate. "
+    "Nunca en tuteo ni en usted: nada de párate, tómate, estírate, mire ni levántese. "
+    "Registro: 'no pasa nada, pero pará'. Nunca alarmista, nunca motivacional, "
+    "nunca coach, nunca app de bienestar. Ironia seca y afecto, en esa proporcion. "
+    "REGLAS DURAS: respondes UNA sola linea de texto plano, maximo 140 caracteres. "
+    "Sin markdown, sin comillas, sin emojis, sin saludar, sin presentarte, "
+    "sin preguntar en que podes ayudar, sin sermon y sin explicar lo que hacen. "
+    "No inventes datos: solo podes mencionar lo que te digo en el contexto. "
+    "No repitas las frases que te paso como ya dichas, ni su estructura. "
+    "Respondes solo con la frase, nada mas."
+)
+
+
+def state_dir():
+    # Respetar XDG y permitir apuntarlo a otro lado desde los tests, para que
+    # probar el script no ensucie el historial real del usuario.
+    base = os.environ.get("ATOM_STATE_DIR")
+    if base:
+        return base
+    xdg = os.environ.get("XDG_STATE_HOME") or os.path.join(os.path.expanduser("~"), ".local", "state")
+    return os.path.join(xdg, "atom")
+
+
+def history_path():
+    return os.path.join(state_dir(), "history.jsonl")
+
+
+def read_history(limit=HISTORY_KEEP):
+    """Las ultimas frases dichas. Un historial ilegible es un historial vacio:
+    no vale la pena fallar una frase por un archivo corrupto."""
+    out = []
+    try:
+        with open(history_path(), "r", encoding="utf-8") as fh:
+            lines = fh.readlines()
+    except (IOError, OSError):
+        return out
+    for line in lines[-limit:]:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            entry = json.loads(line)
+            text = str(entry.get("text", "")).strip()
+        except (ValueError, TypeError):
+            text = ""
+        if text:
+            out.append(text)
+    return out
+
+
+def append_history(text, rule_id):
+    try:
+        path = history_path()
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps({"ts": int(time.time()), "rule": rule_id, "text": text},
+                                ensure_ascii=False) + "\n")
+        trim_history(path)
+    except (IOError, OSError):
+        pass  # no poder anotar la frase no es motivo para no decirla
+
+
+def trim_history(path):
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            lines = fh.readlines()
+        if len(lines) <= HISTORY_MAX_LINES:
+            return
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.writelines(lines[-HISTORY_MAX_LINES:])
+    except (IOError, OSError):
+        pass
+
+
+def render(template, ctx):
+    """Los mismos {placeholders} que usa Rules.js, con la misma semantica: una
+    clave que no esta se deja como vino en vez de romper la frase."""
+    def sub(match):
+        key = match.group(1)
+        value = ctx.get(key)
+        return match.group(0) if value is None else str(value)
+    return re.sub(r"\{(\w+)\}", sub, str(template or ""))
+
+
+def build_prompt(ctx, history):
+    intent = render(ctx.get("intent") or "", ctx).strip()
+    facts = []
+
+    def add(label, key, suffix=""):
+        value = ctx.get(key)
+        if value is None or value == "":
+            return
+        facts.append("- " + label + ": " + str(value) + suffix)
+
+    add("app enfocada", "app")
+    # El titulo es lo unico que puede filtrar algo personal, asi que se manda
+    # solo si el usuario lo dejo prendido (MANIFIESTO 7).
+    if ctx.get("sendTitles", True):
+        add("titulo de la ventana", "title")
+    add("minutos seguidos en esa app", "streakMinutes")
+    add("minutos desde la ultima pausa real", "sessionMinutes")
+    add("hora local", "clock")
+    # Lo que corre DENTRO de la terminal: el titulo dice "Projects" mientras
+    # adentro hay herdr con agentes trabajando. Es el dato que mas personalidad
+    # le da a la frase, porque es el unico que Atom "sabe" y la persona no
+    # espera que sepa.
+    if ctx.get("agents"):
+        add("agentes de claude trabajando ahi adentro", "agents")
+    if ctx.get("justReturned"):
+        add("recien volvio despues de", "awayMinutes", " minutos")
+
+    parts = []
+    if intent:
+        parts.append("Situacion: " + intent)
+    if facts:
+        parts.append("Contexto (solo esto sabes):\n" + "\n".join(facts))
+    if history:
+        parts.append("Ya dijiste esto hace poco, no lo repitas ni parafrasees:\n"
+                     + "\n".join("- " + h for h in history))
+    parts.append("Escribi la frase.")
+    return "\n\n".join(parts)
+
+
+ANSI = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+WRAPPERS = ['"', "'", "“", "”", "‘", "’", "«", "»", "`"]
+
+
+def sanitize(raw):
+    """El modelo puede devolver comillas, un bullet, dos parrafos o una nota al
+    pie. Se lo aplana a una linea porque el globo dibuja una sola y lo que
+    sobra no se veria: mejor cortarlo aca, donde se puede razonar."""
+    text = ANSI.sub("", str(raw or ""))
+    text = text.replace("\r", "\n")
+    # Si vino en varias lineas, la frase es la primera con contenido: las
+    # siguientes suelen ser la explicacion que le pedimos que no diera.
+    lines = [l.strip() for l in text.split("\n")]
+    lines = [l for l in lines if l]
+    text = lines[0] if lines else ""
+    text = re.sub(r"^\s*(?:[-*•]|\d+[.)])\s+", "", text)   # bullets
+    text = text.replace("**", "").replace("__", "").replace("*", "")
+    text = re.sub(r"\s+", " ", text).strip()
+
+    # Comillas envolventes, incluso repetidas ("«...»").
+    changed = True
+    while changed and len(text) >= 2:
+        changed = False
+        for q in WRAPPERS:
+            if text.startswith(q):
+                text = text[1:].strip()
+                changed = True
+        for q in WRAPPERS:
+            if text.endswith(q):
+                text = text[:-1].strip()
+                changed = True
+
+    if len(text) > MAX_CHARS:
+        cut = text[:MAX_CHARS]
+        # Cortar en el ultimo signo de puntuacion si quedo cerca del final, y si
+        # no, en la ultima palabra entera. Una frase cortada al medio de una
+        # palabra se lee como un error del programa, no como una frase.
+        marks = [cut.rfind(c) for c in ".!?"]
+        end = max(marks)
+        if end >= int(MAX_CHARS * 0.6):
+            text = cut[:end + 1]
+        else:
+            space = cut.rfind(" ")
+            text = (cut[:space] if space > 0 else cut).rstrip(" ,;:-") + "..."
+    return text.strip()
+
+
+def call_claude(prompt, model, timeout_s):
+    """Siempre envuelto en `timeout`: un subproceso colgado del shell es la
+    forma mas facil de arruinarle la barra al usuario. El cinturon (timeout(1))
+    y los tirantes (el timeout de subprocess) porque el proceso puede quedar
+    vivo igual si ignora la senal."""
+    if shutil.which("claude") is None:
+        return None, "claude no esta en el PATH"
+    timeout_bin = shutil.which("timeout")
+    cmd = []
+    if timeout_bin:
+        cmd += [timeout_bin, "-k", "2", str(timeout_s)]
+    cmd += [
+        "claude", "-p",
+        "--model", model,
+        "--system-prompt", SYSTEM_PROMPT,
+        "--no-session-persistence",     # nada de esto merece quedar en disco
+        "--strict-mcp-config",          # sin servidores MCP del usuario colgados
+        "--disallowedTools", DISALLOWED,
+    ]
+    try:
+        proc = subprocess.run(
+            cmd,
+            input=prompt.encode("utf-8"),   # el prompt va por stdin: asi ninguna
+                                            # opcion variadica se lo come
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=timeout_s + 5,
+        )
+    except subprocess.TimeoutExpired:
+        return None, "timeout duro de subprocess"
+    except OSError as exc:
+        return None, "no se pudo ejecutar claude: %s" % exc
+
+    if proc.returncode != 0:
+        detail = proc.stderr.decode("utf-8", "replace").strip()[:200]
+        return None, "claude salio con %d %s" % (proc.returncode, detail)
+    return proc.stdout.decode("utf-8", "replace"), None
+
+
+def fail(message):
+    sys.stderr.write("atom-say: " + message + "\n")
+    return 1
+
+
+def main(argv):
+    dry_run = False
+    model = MODEL
+    timeout_s = CLAUDE_TIMEOUT
+    record = True
+    payload = None
+
+    i = 0
+    while i < len(argv):
+        arg = argv[i]
+        if arg == "--dry-run":
+            dry_run = True
+        elif arg == "--no-record":
+            record = False
+        elif arg == "--model" and i + 1 < len(argv):
+            i += 1
+            model = argv[i]
+        elif arg == "--timeout" and i + 1 < len(argv):
+            i += 1
+            try:
+                timeout_s = max(1, int(argv[i]))
+            except ValueError:
+                return fail("--timeout espera un entero")
+        elif arg in ("-h", "--help"):
+            sys.stderr.write(__doc__)
+            return 0
+        elif arg == "-":
+            payload = sys.stdin.read()
+        elif arg.startswith("-"):
+            return fail("opcion desconocida: " + arg)
+        else:
+            payload = arg
+        i += 1
+
+    if payload is None:
+        return fail("falta el contexto JSON por argv")
+    try:
+        ctx = json.loads(payload)
+    except ValueError as exc:
+        return fail("el contexto no es JSON valido: %s" % exc)
+    if not isinstance(ctx, dict):
+        return fail("el contexto tiene que ser un objeto")
+
+    prompt = build_prompt(ctx, read_history())
+
+    if dry_run:
+        # Con esto se prueba el prompt entero sin gastar un solo token.
+        sys.stdout.write("--- system ---\n" + SYSTEM_PROMPT + "\n\n--- prompt ---\n" + prompt + "\n")
+        return 0
+
+    raw, err = call_claude(prompt, model, timeout_s)
+    if err:
+        return fail(err)
+
+    text = sanitize(raw)
+    if not text:
+        return fail("salida vacia despues de sanear")
+
+    if record:
+        append_history(text, ctx.get("rule") or ctx.get("id") or "")
+    sys.stdout.write(text + "\n")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

@@ -1,0 +1,934 @@
+<title>Viernes en la barra</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+  /* ── Tokens ──────────────────────────────────────────────────────────────
+     El tema "Retro 82" de Omarchy es la fuente de todos los colores.
+     Modo claro = versión papel del mismo tema; modo oscuro = el tema tal cual. */
+  :root {
+    --ink:        #05182e;
+    --ink-soft:   #2f4358;
+    --ink-faint:  #6b7f92;
+    --paper:      #f7eeda;
+    --paper-2:    #f1e3c8;
+    --rule:       #ddc9a4;
+
+    --accent:     #c96a1c;
+    --accent-ink: #faa968;
+    --teal:       #2a6b78;
+    --urgent:     #d6421a;
+
+    /* El escritorio simulado no cambia con el tema de la página:
+       es una captura del tema real del usuario. */
+    --dk-bg:      #05182e;
+    --dk-bg-2:    #031222;
+    --dk-bg-3:    #020c17;
+    --dk-fg:      #f6dcac;
+    --dk-dim:     #3f8f8a;
+    --dk-muted:   #2a6b78;
+    --dk-accent:  #faa968;
+    --dk-urgent:  #f85525;
+    --dk-warn:    #e97b3c;
+
+    --shadow: 0 1px 2px rgba(5,24,46,.07), 0 8px 24px -12px rgba(5,24,46,.22);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink:        #f6dcac;
+      --ink-soft:   #c2b48f;
+      --ink-faint:  #8aa0a6;
+      --paper:      #05182e;
+      --paper-2:    #0a2540;
+      --rule:       #17385a;
+
+      --accent:     #faa968;
+      --accent-ink: #faa968;
+      --teal:       #8cbfb8;
+      --urgent:     #f85525;
+
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 32px -16px rgba(0,0,0,.7);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ink:        #f6dcac;
+    --ink-soft:   #c2b48f;
+    --ink-faint:  #8aa0a6;
+    --paper:      #05182e;
+    --paper-2:    #0a2540;
+    --rule:       #17385a;
+
+    --accent:     #faa968;
+    --accent-ink: #faa968;
+    --teal:       #8cbfb8;
+    --urgent:     #f85525;
+
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 32px -16px rgba(0,0,0,.7);
+  }
+
+  /* ── Base ─────────────────────────────────────────────────────────────── */
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Archivo", system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    padding-block: 40px 72px;
+  }
+
+  h1, h2, h3 { text-wrap: balance; margin: 0; }
+
+  h1 {
+    font-size: clamp(30px, 6vw, 44px);
+    font-weight: 700;
+    letter-spacing: -.02em;
+    line-height: 1.08;
+  }
+
+  h2 {
+    font-size: clamp(20px, 3.4vw, 25px);
+    font-weight: 600;
+    letter-spacing: -.01em;
+  }
+
+  p { margin: 0; }
+
+  .lead {
+    color: var(--ink-soft);
+    font-size: 17px;
+    max-width: 62ch;
+  }
+
+  .eyebrow {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--teal);
+  }
+
+  .stack   { display: flex; flex-direction: column; gap: 14px; }
+  .stack-l { display: flex; flex-direction: column; gap: 26px; }
+
+  header.page { display: flex; flex-direction: column; gap: 14px; }
+
+  .themebar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 11.5px; color: var(--ink-faint);
+    padding-top: 6px;
+  }
+  .swatches { display: flex; gap: 5px; }
+  .sw {
+    width: 15px; height: 15px; border-radius: 3px;
+    border: 1px solid rgba(127,127,127,.32);
+  }
+
+  /* ── Sección de opción ────────────────────────────────────────────────── */
+  .option {
+    display: flex; flex-direction: column; gap: 16px;
+    padding-block: 30px;
+    border-top: 1px solid var(--rule);
+  }
+
+  .option-head { display: flex; flex-direction: column; gap: 7px; }
+
+  .option-num {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 12px; font-weight: 700; color: var(--accent);
+    letter-spacing: .1em;
+  }
+
+  /* ── El escritorio simulado ───────────────────────────────────────────── */
+  .screen {
+    position: relative;
+    border-radius: 7px;
+    overflow: hidden;
+    background:
+      radial-gradient(120% 150% at 78% -10%, #123a52 0%, transparent 55%),
+      radial-gradient(90% 120% at 12% 115%, #0d2f4a 0%, transparent 60%),
+      var(--dk-bg-2);
+    border: 1px solid rgba(250,169,104,.16);
+    box-shadow: var(--shadow);
+    min-height: 168px;
+    user-select: none;
+  }
+
+  /* La barra: 26px reales, escalada a 34 para que se vea en pantalla grande */
+  .bar {
+    position: relative;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    background: var(--dk-bg);
+    color: var(--dk-fg);
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 12px;
+    padding-inline: 8px;
+    gap: 8px;
+    border-bottom: 1px solid rgba(246,220,172,.1);
+    z-index: 2;
+  }
+
+  .bar-sec { display: flex; align-items: center; gap: 9px; min-width: 0; }
+  .bar-sec.center { flex: 1; justify-content: center; }
+  .bar-sec.right  { justify-content: flex-end; }
+
+  .w {
+    display: flex; align-items: center; gap: 4px;
+    color: var(--dk-fg); opacity: .82; white-space: nowrap;
+    transition: opacity .35s ease;
+  }
+  .w svg { display: block; }
+  .ws { display: flex; gap: 4px; }
+  .ws i {
+    font-style: normal; width: 13px; text-align: center;
+    opacity: .45; font-size: 11px;
+  }
+  .ws i.on { opacity: 1; color: var(--dk-accent); }
+  .clock { font-weight: 500; opacity: .95; letter-spacing: .01em; }
+
+  /* Widgets tapados por Viernes al caminar por encima */
+  .screen.overlapping .bar-sec .w.shadowed { opacity: .2; }
+
+  /* El carril reservado de la opción 3 */
+  .lane {
+    position: relative;
+    flex: 0 0 104px;
+    height: 24px;
+    border-radius: 4px;
+    border: 1px dashed rgba(250,169,104,.38);
+    background: rgba(250,169,104,.05);
+  }
+  .lane-tag {
+    position: absolute; inset-inline: 0; top: calc(100% + 5px);
+    text-align: center;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--dk-accent); opacity: .75;
+  }
+
+  /* ── Viernes ──────────────────────────────────────────────────────────── */
+  .carp-slot { position: relative; width: 24px; height: 24px; flex: none; }
+
+  .carp-free {
+    position: absolute;
+    top: 5px; left: 0;
+    width: 24px; height: 24px;
+    z-index: 5;
+    transition: transform 1.5s cubic-bezier(.45,.05,.3,1);
+    will-change: transform;
+  }
+  .carp-free.walking .carp-body { animation: step .42s ease-in-out infinite; }
+
+  .carp { width: 100%; height: 100%; display: block; overflow: visible; }
+  .carp .line { fill: var(--dk-bg); stroke: currentColor; stroke-width: 1.15;
+                stroke-linecap: round; stroke-linejoin: round; }
+  .carp .solid { fill: currentColor; stroke: none; }
+  .carp .stroke-only { fill: none; stroke: currentColor; stroke-width: 1.1;
+                       stroke-linecap: round; }
+
+  .carp { color: var(--dk-fg); transition: color .5s ease; }
+  .carp-body { animation: breathe 3.4s ease-in-out infinite; transform-origin: 12px 19px; }
+  .carp-ears { transform-origin: 12px 8px; }
+
+  /* Estados de ánimo */
+  .carp .eyes-closed, .carp .mouth-flat, .carp .mouth-open { display: none; }
+  .carp.blink .eyes-open   { display: none; }
+  .carp.blink .eyes-closed { display: block; }
+
+  .carp.m-calm  .mouth-smile { display: none; }
+  .carp.m-calm  .mouth-flat  { display: block; }
+
+  .carp.m-alert { color: var(--dk-warn); }
+  .carp.m-alert .mouth-smile { display: none; }
+  .carp.m-alert .mouth-flat  { display: block; }
+
+  .carp.m-fried { color: var(--dk-urgent); }
+  .carp.m-fried .eyes-open   { display: none; }
+  .carp.m-fried .eyes-closed { display: block; }
+  .carp.m-fried .carp-body   { animation-duration: 5.2s; transform: translateY(1px); }
+
+  .carp.m-asleep { color: var(--dk-muted); }
+  .carp.m-asleep .eyes-open   { display: none; }
+  .carp.m-asleep .eyes-closed { display: block; }
+  .carp.m-asleep .carp-body   { animation-duration: 6s; }
+
+  .carp.m-muted { color: #4a5a66; }
+  .carp.m-muted .eyes-open   { display: none; }
+  .carp.m-muted .eyes-closed { display: block; }
+  .carp.m-muted .carp-body   { animation: none; }
+
+  .carp.speaking { color: var(--dk-accent); }
+  .carp.speaking .mouth-smile, .carp.speaking .mouth-flat { display: none; }
+  .carp.speaking .mouth-open { display: block; }
+  .carp.speaking .carp-ears  { animation: wiggle .3s ease-in-out 3; }
+
+  @keyframes breathe {
+    0%, 100% { transform: translateY(0)    scaleY(1); }
+    50%      { transform: translateY(-.7px) scaleY(1.025); }
+  }
+  @keyframes wiggle {
+    0%, 100% { transform: rotate(0deg)   translateY(0); }
+    30%      { transform: rotate(-7deg)  translateY(-.8px); }
+    70%      { transform: rotate(7deg)   translateY(-.8px); }
+  }
+  @keyframes step {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-1.4px); }
+  }
+
+  /* ── El globo ─────────────────────────────────────────────────────────── */
+  .bubble {
+    position: absolute;
+    top: 42px;
+    z-index: 6;
+    max-width: min(300px, calc(100% - 24px));
+    background: var(--dk-bg-3);
+    border: 1px solid var(--dk-accent);
+    border-radius: 5px;
+    padding: 9px 11px;
+    color: var(--dk-fg);
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 11.5px;
+    line-height: 1.5;
+    opacity: 0;
+    transform: translateY(-5px);
+    pointer-events: none;
+    transition: opacity .22s ease, transform .22s ease;
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,.75);
+  }
+  .bubble.on { opacity: 1; transform: translateY(0); }
+
+  /* ── Ventana de fondo del escritorio ──────────────────────────────────── */
+  .win {
+    margin: 16px 14px 14px;
+    border: 1px solid rgba(246,220,172,.14);
+    border-radius: 5px;
+    background: rgba(2,12,23,.72);
+    padding: 10px 12px;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 11px;
+    color: var(--dk-dim);
+    line-height: 1.7;
+    min-height: 92px;
+  }
+  .win .prompt { color: var(--dk-accent); }
+  .win .dim    { color: var(--dk-muted); }
+
+  /* ── Controles ────────────────────────────────────────────────────────── */
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  button {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 11.5px;
+    font-weight: 500;
+    letter-spacing: .02em;
+    color: var(--ink);
+    background: var(--paper-2);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 7px 12px;
+    cursor: pointer;
+    transition: border-color .15s ease, color .15s ease, background .15s ease;
+  }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button[aria-pressed="true"] {
+    background: var(--accent); border-color: var(--accent);
+    color: var(--paper);
+  }
+
+  /* ── Costos ───────────────────────────────────────────────────────────── */
+  .costs { display: grid; gap: 7px; }
+  .cost {
+    display: grid;
+    grid-template-columns: 16px 1fr;
+    gap: 9px;
+    align-items: start;
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+  .cost b { color: var(--ink); font-weight: 600; }
+  .mark {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-weight: 700; line-height: 1.5;
+  }
+  .mark.plus  { color: var(--teal); }
+  .mark.minus { color: var(--urgent); }
+
+  /* ── Galería de humores ───────────────────────────────────────────────── */
+  .moods {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+    gap: 10px;
+  }
+  .mood {
+    background: var(--dk-bg);
+    border: 1px solid rgba(246,220,172,.12);
+    border-radius: 6px;
+    padding: 14px 8px 10px;
+    display: flex; flex-direction: column; align-items: center; gap: 9px;
+  }
+  .mood .box { width: 58px; height: 58px; }
+  .mood .nm {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 10px; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--dk-dim); text-align: center;
+  }
+  .mood .when {
+    font-size: 10.5px; color: var(--dk-muted); text-align: center;
+    line-height: 1.4; font-family: "Archivo", sans-serif;
+  }
+
+  /* ── Escala real ──────────────────────────────────────────────────────── */
+  .scale-strip {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 22px;
+    background: var(--dk-bg); border-radius: 6px;
+    border: 1px solid rgba(246,220,172,.12);
+    padding: 16px 18px;
+  }
+  .scale-item { display: flex; align-items: center; gap: 10px; }
+  .scale-item .cap {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 10px; color: var(--dk-muted); letter-spacing: .06em;
+  }
+
+  footer.page {
+    border-top: 1px solid var(--rule);
+    padding-top: 22px;
+    color: var(--ink-faint);
+    font-size: 13.5px;
+  }
+  footer.page code {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 12.5px; color: var(--accent);
+  }
+
+  @media (max-width: 620px) {
+    .hide-sm { display: none; }
+    .bar { gap: 5px; padding-inline: 6px; }
+    .bar-sec { gap: 6px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .carp-body, .carp-ears, .carp-free.walking .carp-body { animation: none !important; }
+    .carp-free { transition-duration: .01ms; }
+  }
+</style>
+
+<div class="wrap stack-l">
+
+  <header class="page">
+    <div class="eyebrow">Omarchy · omarchy-shell · plugin leono.carpincho</div>
+    <h1>Viernes en la barra</h1>
+    <p class="lead">
+      Tres formas de que el carpincho viva en la barra, de la más barata a la más
+      viva. Todo lo que ves abajo está dibujado con vectores y pintado con los
+      colores de tu tema actual — <strong>Retro 82</strong> — así que es
+      razonablemente parecido a lo que vas a tener.
+    </p>
+    <div class="themebar">
+      <div class="swatches">
+        <div class="sw" style="background:#05182e" title="background #05182e"></div>
+        <div class="sw" style="background:#f6dcac" title="foreground #f6dcac"></div>
+        <div class="sw" style="background:#faa968" title="accent #faa968"></div>
+        <div class="sw" style="background:#3f8f8a" title="blue #3f8f8a"></div>
+        <div class="sw" style="background:#f85525" title="red #f85525"></div>
+      </div>
+      <span>Retro 82 · JetBrainsMono Nerd Font · barra de 26&nbsp;px arriba</span>
+    </div>
+  </header>
+
+  <!-- ═══ OPCIÓN 1 ═══════════════════════════════════════════════════════ -->
+  <section class="option" style="border-top:none; padding-top:0">
+    <div class="option-head">
+      <div class="option-num">OPCIÓN 1</div>
+      <h2>Slot fijo</h2>
+      <p class="lead">
+        Un <code>bar-widget</code> común, como el reloj o el volumen. Vive en un
+        casillero de su sección y ahí se queda: respira, parpadea, sacude las
+        orejas y tira el globo hacia abajo. Moverse, lo que se dice moverse, se
+        mueve un par de píxeles.
+      </p>
+    </div>
+
+    <div class="screen" id="s1">
+      <div class="bar">
+        <div class="bar-sec left">
+          <div class="w" title="omarchy.menu">
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          </div>
+          <div class="w ws" title="omarchy.workspaces"><i class="on">1</i><i>2</i><i>3</i></div>
+        </div>
+        <div class="bar-sec center">
+          <div class="w clock">domingo 21:47</div>
+          <div class="w hide-sm" title="omarchy.weather">
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.1" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 1.6v1.5M8 12.9v1.5M1.6 8h1.5M12.9 8h1.5M3.5 3.5l1 1M11.5 11.5l1 1M12.5 3.5l-1 1M4.5 11.5l-1 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+        <div class="bar-sec right">
+          <div class="w hide-sm" title="omarchy.network">
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.8 6.2a9 9 0 0 1 12.4 0M4.2 8.8a5.6 5.6 0 0 1 7.6 0" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="12" r="1.2" fill="currentColor"/></svg>
+          </div>
+          <div class="w" title="omarchy.audio">
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6h2.3L8.6 3.2v9.6L5.3 10H3z" fill="currentColor"/><path d="M10.8 6.2a2.8 2.8 0 0 1 0 3.6" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          </div>
+          <!-- Viernes, en su casillero -->
+          <div class="carp-slot"><div class="carp-here" data-carp="1"></div></div>
+          <div class="w" title="omarchy.power">
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.2v5.2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M4.6 4.7a4.6 4.6 0 1 0 6.8 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="bubble" id="b1" style="right:14px"></div>
+      <div class="win">
+        <div><span class="prompt">~/Projects/kenos</span> herdr</div>
+        <div class="dim">› 3 panes · claude trabajando en api/auth</div>
+        <div class="dim">› 47 min en esta ventana</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button type="button" data-speak="1">Hacelo hablar</button>
+      <button type="button" data-mood-cycle="1">Cambiar humor</button>
+    </div>
+
+    <div class="costs">
+      <div class="cost"><span class="mark plus">+</span><span><b>Lo maneja el shell.</b> Posición, barra vertical, multi-monitor y reordenar widgets vienen gratis.</span></div>
+      <div class="cost"><span class="mark plus">+</span><span><b>Nunca tapa nada.</b> Ocupa su casillero y ya; conviven todos.</span></div>
+      <div class="cost"><span class="mark plus">+</span><span><b>Lo movés con un comando.</b> <code>omarchy bar move leono.carpincho --section left</code>.</span></div>
+      <div class="cost"><span class="mark minus">−</span><span><b>Es un ícono con estados.</b> Simpático, pero no habita la barra: está clavado ahí.</span></div>
+    </div>
+  </section>
+
+  <!-- ═══ OPCIÓN 2 ═══════════════════════════════════════════════════════ -->
+  <section class="option">
+    <div class="option-head">
+      <div class="option-num">OPCIÓN 2</div>
+      <h2>Paseante</h2>
+      <p class="lead">
+        Un plugin de tipo <code>panel</code>: una ventana layer-shell propia,
+        flotando encima de la barra con coordenadas libres. Camina de punta a
+        punta y se para al lado del widget que le interesa. Es el personaje de
+        verdad — y por eso pasa por arriba de todo lo demás.
+      </p>
+    </div>
+
+    <div class="screen" id="s2">
+      <div class="bar">
+        <div class="bar-sec left">
+          <div class="w" title="omarchy.menu">
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          </div>
+          <div class="w ws"><i class="on">1</i><i>2</i><i>3</i></div>
+        </div>
+        <div class="bar-sec center">
+          <div class="w clock" data-stop="reloj">domingo 21:47</div>
+          <div class="w hide-sm">
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.1" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 1.6v1.5M8 12.9v1.5M1.6 8h1.5M12.9 8h1.5M3.5 3.5l1 1M11.5 11.5l1 1M12.5 3.5l-1 1M4.5 11.5l-1 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+        <div class="bar-sec right">
+          <div class="w hide-sm">
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.8 6.2a9 9 0 0 1 12.4 0M4.2 8.8a5.6 5.6 0 0 1 7.6 0" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="12" r="1.2" fill="currentColor"/></svg>
+          </div>
+          <div class="w">
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6h2.3L8.6 3.2v9.6L5.3 10H3z" fill="currentColor"/><path d="M10.8 6.2a2.8 2.8 0 0 1 0 3.6" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          </div>
+          <div class="w" data-stop="power">
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.2v5.2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M4.6 4.7a4.6 4.6 0 1 0 6.8 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+      </div>
+      <!-- Viernes flota por encima de la barra, no adentro -->
+      <div class="carp-free" data-carp="2"></div>
+      <div class="bubble" id="b2"></div>
+      <div class="win">
+        <div><span class="prompt">~/Projects/kenos</span> herdr</div>
+        <div class="dim">› 3 panes · claude trabajando en api/auth</div>
+        <div class="dim">› 47 min en esta ventana</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button type="button" data-walk="2" data-target="reloj">Caminar hasta el reloj</button>
+      <button type="button" data-walk="2" data-target="home">Volver a la derecha</button>
+      <button type="button" data-speak="2">Hacelo hablar</button>
+      <button type="button" data-patrol="2" aria-pressed="false">Patrullar</button>
+    </div>
+
+    <div class="costs">
+      <div class="cost"><span class="mark plus">+</span><span><b>Habita la barra.</b> Camina, se detiene, mira lo que estás mirando. Es la diferencia entre un ícono y un personaje.</span></div>
+      <div class="cost"><span class="mark minus">−</span><span><b>Tapa lo que pisa.</b> Mirá el reloj cuando se le para al lado: hay que atenuarlo, esquivarlo o aceptarlo.</span></div>
+      <div class="cost"><span class="mark minus">−</span><span><b>Los clicks hay que domarlos.</b> La ventana tiene que ser transparente al input salvo en el carpincho, o te come clicks de la barra.</span></div>
+      <div class="cost"><span class="mark minus">−</span><span><b>Todo lo posicional es nuestro.</b> Barra vertical, dos monitores, cambio de layout: lo resolvemos a mano.</span></div>
+    </div>
+  </section>
+
+  <!-- ═══ OPCIÓN 3 ═══════════════════════════════════════════════════════ -->
+  <section class="option">
+    <div class="option-head">
+      <div class="option-num">OPCIÓN 3</div>
+      <h2>Carril propio</h2>
+      <p class="lead">
+        El punto medio: sigue siendo un widget del shell, pero en vez de ocupar
+        un casillero de 24&nbsp;px reserva un tramo de barra y camina
+        <em>adentro</em> de él. Se mueve de verdad, y no pisa a nadie porque el
+        espacio es suyo.
+      </p>
+    </div>
+
+    <div class="screen" id="s3">
+      <div class="bar">
+        <div class="bar-sec left">
+          <div class="w">
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          </div>
+          <div class="w ws"><i class="on">1</i><i>2</i><i>3</i></div>
+        </div>
+        <div class="bar-sec center">
+          <div class="w clock">domingo 21:47</div>
+        </div>
+        <div class="bar-sec right">
+          <div class="lane">
+            <div class="carp-free" data-carp="3" style="top:0"></div>
+            <div class="lane-tag">su carril</div>
+          </div>
+          <div class="w hide-sm">
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.8 6.2a9 9 0 0 1 12.4 0M4.2 8.8a5.6 5.6 0 0 1 7.6 0" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="12" r="1.2" fill="currentColor"/></svg>
+          </div>
+          <div class="w">
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6h2.3L8.6 3.2v9.6L5.3 10H3z" fill="currentColor"/><path d="M10.8 6.2a2.8 2.8 0 0 1 0 3.6" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          </div>
+          <div class="w">
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.2v5.2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M4.6 4.7a4.6 4.6 0 1 0 6.8 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+      </div>
+      <div class="bubble" id="b3" style="right:14px"></div>
+      <div class="win">
+        <div><span class="prompt">~/Projects/kenos</span> herdr</div>
+        <div class="dim">› 3 panes · claude trabajando en api/auth</div>
+        <div class="dim">› 47 min en esta ventana</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button type="button" data-pace="3" aria-pressed="false">Que se pasee</button>
+      <button type="button" data-speak="3">Hacelo hablar</button>
+    </div>
+
+    <div class="costs">
+      <div class="cost"><span class="mark plus">+</span><span><b>Se mueve sin pisar a nadie.</b> El carril es suyo; el resto de la barra ni se entera.</span></div>
+      <div class="cost"><span class="mark plus">+</span><span><b>Sigue siendo un widget.</b> El shell sigue manejando posición, monitores y orientación.</span></div>
+      <div class="cost"><span class="mark minus">−</span><span><b>Cuesta barra.</b> Son ~100&nbsp;px que no están disponibles para otra cosa, siempre.</span></div>
+      <div class="cost"><span class="mark minus">−</span><span><b>Camina en una jaula.</b> Recorre su tramo, no la pantalla. Más vivo que la 1, menos libre que la 2.</span></div>
+    </div>
+  </section>
+
+  <!-- ═══ HUMORES ════════════════════════════════════════════════════════ -->
+  <section class="option">
+    <div class="option-head">
+      <div class="option-num">EL PERSONAJE</div>
+      <h2>Los seis humores</h2>
+      <p class="lead">
+        El humor es función del tiempo sin pausa, y es la parte que comunica sin
+        decir una palabra. Acá están agrandados; abajo los tenés a tamaño real.
+      </p>
+    </div>
+    <div class="moods" id="moods"></div>
+  </section>
+
+  <!-- ═══ ESCALA ═════════════════════════════════════════════════════════ -->
+  <section class="option">
+    <div class="option-head">
+      <div class="option-num">LA LETRA CHICA</div>
+      <h2>Tamaño real</h2>
+      <p class="lead">
+        Todo lo de arriba está ampliado. En tu barra Viernes mide 16&nbsp;px de
+        alto, dentro de una barra de 26. Esto es lo que vas a ver de verdad:
+      </p>
+    </div>
+    <div class="scale-strip">
+      <div class="scale-item"><div class="box" style="width:16px;height:16px" data-carp="sc1"></div><span class="cap">16 px · real</span></div>
+      <div class="scale-item"><div class="box" style="width:24px;height:24px" data-carp="sc2"></div><span class="cap">24 px</span></div>
+      <div class="scale-item"><div class="box" style="width:40px;height:40px" data-carp="sc3"></div><span class="cap">40 px</span></div>
+      <div class="scale-item"><div class="box" style="width:72px;height:72px" data-carp="sc4"></div><span class="cap">72 px</span></div>
+    </div>
+  </section>
+
+  <footer class="page">
+    Las tres opciones comparten exactamente el mismo cerebro
+    (<code>Service.qml</code> + <code>SidekickRules.js</code>) y el mismo dibujo
+    (<code>Carpincho.qml</code>). Lo único que cambia es el envase, así que
+    empezar por la 1 y mudarse a la 2 más adelante no tira nada a la basura.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ── El dibujo ───────────────────────────────────────────────────────────
+     Un carpincho en un viewBox de 24×24: cabeza ancha y redonda, orejas
+     chiquitas y altas, hocico romo. Las orejas van primero para que la cabeza
+     (rellena con el color de la barra) las tape por la mitad. */
+  function carpinchoSVG() {
+    return '' +
+      '<svg class="carp" viewBox="0 0 24 24" aria-hidden="true">' +
+        '<g class="carp-body">' +
+          '<g class="carp-ears">' +
+            '<circle class="line" cx="5.9" cy="5.0" r="2.7"/>' +
+            '<circle class="line" cx="18.1" cy="5.0" r="2.7"/>' +
+          '</g>' +
+          '<rect class="line" x="2.4" y="4.4" width="19.2" height="14.6" rx="5.2"/>' +
+          '<g class="eyes-open">' +
+            '<circle class="solid" cx="8.0" cy="9.6" r="1.5"/>' +
+            '<circle class="solid" cx="16.0" cy="9.6" r="1.5"/>' +
+          '</g>' +
+          '<g class="eyes-closed">' +
+            '<path class="stroke-only" d="M6.5 9.5q1.5 1.7 3 0"/>' +
+            '<path class="stroke-only" d="M14.5 9.5q1.5 1.7 3 0"/>' +
+          '</g>' +
+          /* El hocico comparte el borde inferior de la cabeza: así lee como
+             trompa de carpincho y no como una cara adentro de otra cara. */
+          '<rect class="line" x="6.4" y="13.2" width="11.2" height="5.6" rx="2.6"/>' +
+          '<ellipse class="solid" cx="12" cy="15.1" rx="1.45" ry="0.95"/>' +
+          '<path class="stroke-only mouth-smile" d="M10.3 16.9q1.7 1.35 3.4 0"/>' +
+          '<path class="stroke-only mouth-flat" d="M10.5 17.2h3"/>' +
+          '<ellipse class="solid mouth-open" cx="12" cy="17.2" rx="1.2" ry="1"/>' +
+        '</g>' +
+      '</svg>';
+  }
+
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* Cada carpincho parpadea por su cuenta, en momentos distintos. */
+  function mountCarpincho(host, mood) {
+    host.innerHTML = carpinchoSVG();
+    var svg = host.querySelector(".carp");
+    if (mood) svg.classList.add(mood);
+
+    var sleeps = ["m-fried", "m-asleep", "m-muted"];
+    function blinkLoop() {
+      var delay = 3200 + Math.random() * 4200;
+      setTimeout(function () {
+        var asleep = sleeps.some(function (c) { return svg.classList.contains(c); });
+        if (!asleep && !reduced) {
+          svg.classList.add("blink");
+          setTimeout(function () { svg.classList.remove("blink"); }, 135);
+        }
+        blinkLoop();
+      }, delay);
+    }
+    if (!reduced) blinkLoop();
+    return svg;
+  }
+
+  /* ── Las frases: salen del banco real de SidekickRules.js ─────────────── */
+  var LINES = [
+    "Van 47 minutos clavado en herdr. ¿No te parece que podríamos parar para estirar y tomar agua... o parpadear?",
+    "47 minutos sin levantarte. Agua, ventana, dos respiraciones. Te espero.",
+    "Che, 47 minutos en herdr. Los hombros te lo van a agradecer.",
+    "Hace 47 minutos que no mirás más allá de 60 cm. Mirá algo lejos un rato."
+  ];
+  var lineIx = 0;
+
+  var carps = {};
+  ["1", "2", "3"].forEach(function (n) {
+    var host = document.querySelector('[data-carp="' + n + '"]');
+    if (host) carps[n] = mountCarpincho(host);
+  });
+
+  function speak(n) {
+    var svg = carps[n];
+    var bubble = document.getElementById("b" + n);
+    if (!svg || !bubble) return;
+
+    bubble.textContent = LINES[lineIx % LINES.length];
+    lineIx++;
+
+    /* En la opción 2 el globo cuelga de donde esté parado el carpincho. */
+    if (n === "2") {
+      var free = svg.closest(".carp-free");
+      var screen = document.getElementById("s2");
+      var x = free.getBoundingClientRect().left - screen.getBoundingClientRect().left;
+      bubble.style.left = Math.max(10, Math.min(x - 18, screen.clientWidth - 200)) + "px";
+      bubble.style.right = "auto";
+    }
+
+    svg.classList.add("speaking");
+    bubble.classList.add("on");
+
+    clearTimeout(svg._sayT);
+    svg._sayT = setTimeout(function () {
+      svg.classList.remove("speaking");
+      bubble.classList.remove("on");
+    }, 5200);
+  }
+
+  /* ── Caminar (opción 2) ──────────────────────────────────────────────── */
+  function walkTo(n, targetName) {
+    var free = carps[n].closest(".carp-free");
+    var screen = document.getElementById("s" + n);
+    var bar = screen.querySelector(".bar");
+    var x;
+
+    if (targetName === "home") {
+      x = bar.clientWidth - 34;
+    } else {
+      var target = screen.querySelector('[data-stop="' + targetName + '"]');
+      if (!target) return;
+      var tr = target.getBoundingClientRect();
+      var br = bar.getBoundingClientRect();
+      x = (tr.left - br.left) + tr.width / 2 - 12;
+    }
+
+    x = Math.max(4, Math.min(x, bar.clientWidth - 28));
+    free.classList.add("walking");
+    free.style.transform = "translateX(" + x + "px)";
+
+    /* Los widgets que quedan debajo se atenúan: ése es el costo, mostrado. */
+    clearTimeout(free._walkT);
+    free._walkT = setTimeout(function () {
+      free.classList.remove("walking");
+      shadowUnder(screen, free);
+    }, reduced ? 20 : 1520);
+  }
+
+  function shadowUnder(screen, free) {
+    var fr = free.getBoundingClientRect();
+    screen.querySelectorAll(".bar .w").forEach(function (w) {
+      var wr = w.getBoundingClientRect();
+      var hit = !(wr.right < fr.left - 2 || wr.left > fr.right + 2);
+      w.classList.toggle("shadowed", hit);
+    });
+  }
+
+  /* Patrulla: va y viene sola, para ver el movimiento sin hacer nada. */
+  var patrolTimer = null;
+  function togglePatrol(btn) {
+    var on = btn.getAttribute("aria-pressed") === "true";
+    btn.setAttribute("aria-pressed", on ? "false" : "true");
+    if (on) { clearInterval(patrolTimer); patrolTimer = null; return; }
+
+    var stops = ["reloj", "home"];
+    var i = 0;
+    walkTo("2", stops[i++ % stops.length]);
+    patrolTimer = setInterval(function () {
+      walkTo("2", stops[i++ % stops.length]);
+    }, 3400);
+  }
+
+  /* ── Pasear dentro del carril (opción 3) ─────────────────────────────── */
+  var paceTimer = null;
+  function togglePace(btn) {
+    var on = btn.getAttribute("aria-pressed") === "true";
+    btn.setAttribute("aria-pressed", on ? "false" : "true");
+    var free = carps["3"].closest(".carp-free");
+    if (on) {
+      clearInterval(paceTimer); paceTimer = null;
+      free.classList.remove("walking");
+      free.style.transform = "translateX(0px)";
+      return;
+    }
+    var lane = free.parentElement;
+    var span = Math.max(0, lane.clientWidth - 26);
+    var at = 0;
+    function hop() {
+      at = at === 0 ? span : 0;
+      free.classList.add("walking");
+      free.style.transform = "translateX(" + at + "px)";
+      setTimeout(function () { free.classList.remove("walking"); }, reduced ? 20 : 1520);
+    }
+    hop();
+    paceTimer = setInterval(hop, 3000);
+  }
+
+  /* ── Humores ─────────────────────────────────────────────────────────── */
+  var MOODS = [
+    { cls: "",         nm: "fresco",  when: "recién arrancás" },
+    { cls: "m-calm",   nm: "tranqui", when: "ritmo normal" },
+    { cls: "m-alert",  nm: "atento",  when: "45 min sin parar" },
+    { cls: "m-fried",  nm: "frito",   when: "2 horas sin parar" },
+    { cls: "m-asleep", nm: "dormido", when: "no estás en la máquina" },
+    { cls: "m-muted",  nm: "mudo",    when: "lo silenciaste" }
+  ];
+
+  var moodsEl = document.getElementById("moods");
+  MOODS.forEach(function (m) {
+    var cell = document.createElement("div");
+    cell.className = "mood";
+    var box = document.createElement("div");
+    box.className = "box";
+    cell.appendChild(box);
+    var nm = document.createElement("div");
+    nm.className = "nm";
+    nm.textContent = m.nm;
+    cell.appendChild(nm);
+    var wh = document.createElement("div");
+    wh.className = "when";
+    wh.textContent = m.when;
+    cell.appendChild(wh);
+    moodsEl.appendChild(cell);
+    mountCarpincho(box, m.cls);
+  });
+
+  /* Ciclo de humor en la opción 1, para verlos en contexto. */
+  var cycleIx = 0;
+  function cycleMood(n) {
+    var svg = carps[n];
+    MOODS.forEach(function (m) { if (m.cls) svg.classList.remove(m.cls); });
+    cycleIx = (cycleIx + 1) % MOODS.length;
+    var next = MOODS[cycleIx];
+    if (next.cls) svg.classList.add(next.cls);
+  }
+
+  /* ── Escala real ─────────────────────────────────────────────────────── */
+  ["sc1", "sc2", "sc3", "sc4"].forEach(function (id) {
+    var host = document.querySelector('[data-carp="' + id + '"]');
+    if (host) mountCarpincho(host, "");
+  });
+
+  /* ── Cableado ────────────────────────────────────────────────────────── */
+  document.querySelectorAll("[data-speak]").forEach(function (b) {
+    b.addEventListener("click", function () { speak(b.dataset.speak); });
+  });
+  document.querySelectorAll("[data-walk]").forEach(function (b) {
+    b.addEventListener("click", function () { walkTo(b.dataset.walk, b.dataset.target); });
+  });
+  document.querySelectorAll("[data-patrol]").forEach(function (b) {
+    b.addEventListener("click", function () { togglePatrol(b); });
+  });
+  document.querySelectorAll("[data-pace]").forEach(function (b) {
+    b.addEventListener("click", function () { togglePace(b); });
+  });
+  document.querySelectorAll("[data-mood-cycle]").forEach(function (b) {
+    b.addEventListener("click", function () { cycleMood(b.dataset.moodCycle); });
+  });
+
+  /* Estado inicial: la 2 arranca a la derecha, como la 1 y la 3. */
+  var free2 = carps["2"] && carps["2"].closest(".carp-free");
+  if (free2) {
+    requestAnimationFrame(function () {
+      var bar = document.querySelector("#s2 .bar");
+      free2.style.transition = "none";
+      free2.style.transform = "translateX(" + (bar.clientWidth - 34) + "px)";
+      requestAnimationFrame(function () { free2.style.transition = ""; });
+    });
+  }
+})();
+</script>

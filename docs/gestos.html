@@ -1,0 +1,607 @@
+<title>Tres gestos de Atom</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+  /* Tema Retro 82, igual que el resto del proyecto. */
+  :root {
+    --ink: #05182e; --ink-soft: #2f4358; --ink-faint: #6b7f92;
+    --paper: #f7eeda; --paper-2: #f1e3c8; --rule: #ddc9a4;
+    --accent: #c96a1c; --teal: #2a6b78; --urgent: #d6421a;
+
+    --dk-bg: #05182e; --dk-bg-2: #031222; --dk-bg-3: #020c17;
+    --dk-fg: #f6dcac; --dk-dim: #3f8f8a; --dk-muted: #2a6b78;
+    --dk-accent: #faa968; --dk-urgent: #f85525;
+
+    --shadow: 0 1px 2px rgba(5,24,46,.07), 0 10px 28px -14px rgba(5,24,46,.25);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #f6dcac; --ink-soft: #c2b48f; --ink-faint: #8aa0a6;
+      --paper: #05182e; --paper-2: #0a2540; --rule: #17385a;
+      --accent: #faa968; --teal: #8cbfb8; --urgent: #f85525;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 14px 34px -18px rgba(0,0,0,.75);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #f6dcac; --ink-soft: #c2b48f; --ink-faint: #8aa0a6;
+    --paper: #05182e; --paper-2: #0a2540; --rule: #17385a;
+    --accent: #faa968; --teal: #8cbfb8; --urgent: #f85525;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 14px 34px -18px rgba(0,0,0,.75);
+  }
+
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: "Archivo", system-ui, sans-serif;
+    font-size: 15px; line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 76px; }
+
+  h1, h2 { margin: 0; text-wrap: balance; }
+  h1 { font-size: clamp(30px, 6vw, 44px); font-weight: 700; letter-spacing: -.022em; line-height: 1.07; }
+  h2 { font-size: clamp(20px, 3.4vw, 26px); font-weight: 600; letter-spacing: -.012em; }
+  p { margin: 0; }
+  .lead { color: var(--ink-soft); font-size: 17px; max-width: 64ch; }
+  .note { color: var(--ink-faint); font-size: 13.5px; max-width: 66ch; }
+
+  .eyebrow {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 11px; font-weight: 500; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--teal);
+  }
+  code { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .92em; color: var(--accent); }
+
+  .stack-l { display: flex; flex-direction: column; gap: 34px; }
+  .stack { display: flex; flex-direction: column; gap: 13px; }
+  section.blk { display: flex; flex-direction: column; gap: 18px; padding-top: 32px; border-top: 1px solid var(--rule); }
+  section.blk.first { border-top: none; padding-top: 0; }
+
+  /* ── Aviso de decisión ─────────────────────────────────────────────── */
+  .warn {
+    border-left: 3px solid var(--accent);
+    background: color-mix(in srgb, var(--accent) 9%, transparent);
+    padding: 14px 16px; border-radius: 0 5px 5px 0;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .warn .t {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent);
+  }
+  .warn p { font-size: 14.5px; color: var(--ink-soft); }
+  .warn b { color: var(--ink); font-weight: 600; }
+
+  /* ── Grilla de opciones ────────────────────────────────────────────── */
+  .opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+
+  .opt {
+    background: var(--paper-2); border: 1px solid var(--rule); border-radius: 7px;
+    overflow: hidden; display: flex; flex-direction: column;
+    transition: border-color .18s ease, transform .18s ease;
+  }
+  .opt:hover { border-color: var(--accent); }
+
+  .opt .stagewrap {
+    position: relative; height: 92px;
+    background:
+      radial-gradient(120% 160% at 80% -20%, #123a52 0%, transparent 60%),
+      var(--dk-bg-2);
+    border-bottom: 1px solid var(--rule);
+    overflow: hidden;
+  }
+
+  /* La franja de barra simulada, 2× para que se vea el gesto */
+  .bar {
+    position: absolute; left: 0; right: 0; top: 0; height: 52px;
+    background: var(--dk-bg);
+    border-bottom: 1px solid rgba(246,220,172,.12);
+    overflow: hidden;
+  }
+  .bar .widget {
+    position: absolute; top: 12px; height: 28px;
+    border-radius: 3px;
+    background: rgba(246,220,172,.13);
+    border: 1px solid rgba(246,220,172,.22);
+  }
+  .bar .widget.clock {
+    background: rgba(250,169,104,.16); border-color: rgba(250,169,104,.5);
+  }
+  .bar .widget .lbl {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 9px; color: var(--dk-fg); opacity: .65;
+  }
+
+  .actor { position: absolute; bottom: 0; left: 0; width: 56px; height: 40px; }
+  .actor.flip .dog { transform: scaleX(-1); }
+
+  .dog { width: 100%; height: 100%; display: block; overflow: visible; color: var(--dk-fg); }
+  .dog .line { fill: var(--dk-bg); stroke: currentColor; stroke-width: 1.05; stroke-linejoin: round; }
+  .dog .leg { stroke: currentColor; stroke-width: 2.1; stroke-linecap: round; fill: none; }
+  .dog .leg.far { opacity: .45; }
+  .dog .tail { stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; fill: none; }
+  .dog .solid { fill: currentColor; stroke: none; }
+
+  /* El chorro: distintos tratamientos por opción */
+  .stream { stroke: var(--dk-accent); fill: none; stroke-linecap: round; opacity: 0; }
+  .drop { fill: var(--dk-accent); opacity: 0; }
+  .puddle { fill: var(--dk-accent); opacity: 0; }
+
+  .opt .meta { padding: 12px 13px 14px; display: flex; flex-direction: column; gap: 6px; }
+  .opt .name {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent);
+  }
+  .opt .desc { font-size: 13px; color: var(--ink-soft); line-height: 1.45; }
+  .opt .cost { font-size: 12px; color: var(--ink-faint); line-height: 1.4; }
+  .opt .cost b { color: var(--ink); font-weight: 600; }
+
+  .replay {
+    align-self: flex-start; margin-top: 2px;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 10.5px; color: var(--ink-faint);
+    background: transparent; border: 1px solid var(--rule); border-radius: 4px;
+    padding: 4px 9px; cursor: pointer;
+    transition: color .15s ease, border-color .15s ease;
+  }
+  .replay:hover { color: var(--accent); border-color: var(--accent); }
+  .replay:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  footer.page { border-top: 1px solid var(--rule); padding-top: 22px; color: var(--ink-faint); font-size: 13.5px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .actor, .dog *, .stream, .drop, .puddle { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="wrap stack-l">
+
+  <header class="stack">
+    <div class="eyebrow">Atom · opciones de gesto</div>
+    <h1>Tres gestos de Atom</h1>
+    <p class="lead">
+      Cuatro formas de hacer cada uno. Todas corren en vivo y en loop: mirá
+      unos segundos y decime un número por gesto. La franja está al doble de
+      tamaño para que se vea; en tu barra es la mitad.
+    </p>
+  </header>
+
+  <!-- ═══ EL PIS ═════════════════════════════════════════════════════════ -->
+  <section class="blk first">
+    <div class="stack">
+      <div class="eyebrow">Gesto 1</div>
+      <h2>El pis</h2>
+      <p class="lead">
+        Tu dibujo aclaró lo principal: es <strong>un arco</strong>, no tres
+        gotas cayendo. Lo que queda por elegir es cómo se dibuja ese arco y
+        qué deja atrás.
+      </p>
+    </div>
+    <div class="opts" id="pee"></div>
+    <p class="note">
+      En los cuatro casos el perro se para del lado que tenga libre y se da
+      vuelta si hace falta, porque la pata que levanta tiene que apuntarle al
+      objetivo.
+    </p>
+  </section>
+
+  <!-- ═══ EL SALTO ═══════════════════════════════════════════════════════ -->
+  <section class="blk">
+    <div class="stack">
+      <div class="eyebrow">Gesto 2</div>
+      <h2>El salto</h2>
+      <p class="lead">
+        Tenías razón: saltar en el lugar no es jugar. Un perro contento se
+        tira de un lado al otro.
+      </p>
+    </div>
+
+    <div class="warn">
+      <div class="t">esto choca con una regla tuya</div>
+      <p>
+        <b>«Solo se traslada cuando camina.»</b> Un salto que lo lleva de un
+        lado a otro <em>es</em> trasladarse, así que hay que elegir cómo
+        convive con la invariante. Dos caminos:
+      </p>
+      <p>
+        <b>A — `jump` pasa a ser una segunda pose que se traslada.</b> La regla
+        deja de ser «solo camina» y pasa a ser «solo las poses que lo declaran».
+        El código ya está preparado: el que mueve le pregunta a la pose, no a
+        una lista. Es honesto y es una línea.
+      </p>
+      <p>
+        <b>B — cada salto es un viajecito.</b> El salto sigue sin trasladarse;
+        lo que se mueve es un trayecto corto que empieza y termina en el aire.
+        La regla queda intacta pero el gesto es más difícil de sincronizar.
+      </p>
+      <p>
+        Las cuatro opciones de abajo funcionan con cualquiera de los dos. Yo
+        iría por <b>A</b>: la regla que importaba era «un perro sentado no se
+        desliza», y eso se mantiene igual.
+      </p>
+    </div>
+
+    <div class="opts" id="jump"></div>
+  </section>
+
+  <!-- ═══ EL PASEO ═══════════════════════════════════════════════════════ -->
+  <section class="blk">
+    <div class="stack">
+      <div class="eyebrow">Gesto 3</div>
+      <h2>El paseo</h2>
+      <p class="lead">
+        Hoy va de hueco en hueco, en tramos cortos. Vos querés que recorra la
+        barra entera — y que pueda salir por un borde y aparecer por el otro.
+      </p>
+    </div>
+    <div class="opts" id="patrol"></div>
+    <p class="note">
+      La vuelta por el borde es gratis de implementar: la ventana de Atom ya
+      ocupa el ancho completo de la pantalla, así que salir de cuadro es
+      simplemente caminar más allá del borde.
+    </p>
+  </section>
+
+  <footer class="page">
+    Decime un número por gesto — por ejemplo «1, 3, 2» — y los dejo andando.
+    Si querés mezclar (el arco de una con el charquito de otra) también se
+    puede: son parámetros del mismo dibujo.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ── El perro ───────────────────────────────────────────────────────────
+     Mismo dibujo que la hoja de diseño: perfil mirando a la derecha, viewBox
+     de 34×24, piso en y=21. `variant` cambia qué patas se dibujan. */
+  function dogSVG(variant) {
+    var backNear = variant === "pee"
+      ? '<line class="leg" x1="10.4" y1="15.4" x2="4.6" y2="12.2"/>'   // pata levantada hacia atrás
+      : '<line class="leg" x1="10.4" y1="15.4" x2="10.4" y2="20.8"/>';
+
+    var tail = variant === "pee" || variant === "jump"
+      ? '<path class="tail" d="M6.4 10.2q-3.4-1.6-2.4-5"/>'            // cola alta
+      : '<path class="tail" d="M6.4 10.2q-3.2-.6-3.1-4.3"/>';
+
+    return '' +
+      '<svg class="dog" viewBox="0 0 34 24" aria-hidden="true">' +
+        '<g class="body">' +
+          '<line class="leg far" x1="8.6" y1="15.4" x2="8.6" y2="20.6"/>' +
+          '<line class="leg far" x1="19.4" y1="15.4" x2="19.4" y2="20.6"/>' +
+          tail +
+          '<rect class="line" x="5.4" y="8.8" width="17.6" height="7.8" rx="3.9"/>' +
+          backNear +
+          '<line class="leg" x1="21.2" y1="15.4" x2="21.2" y2="20.8"/>' +
+          '<circle class="line" cx="24.8" cy="8" r="3.9"/>' +
+          '<rect class="line" x="26.8" y="7.6" width="5.3" height="3.7" rx="1.6"/>' +
+          '<circle class="solid" cx="31.5" cy="8.7" r="0.78"/>' +
+          '<circle class="solid" cx="25.3" cy="7.1" r="0.85"/>' +
+          '<ellipse class="line" cx="23.2" cy="7.7" rx="1.55" ry="3.1" transform="rotate(-11 23.2 7.7)"/>' +
+        '</g>' +
+        '<g class="fx"></g>' +
+      '</svg>';
+  }
+
+  /* El arco del pis: sale de la ingle y cae hacia atrás y abajo, como el
+     dibujo del usuario. Las cuatro opciones lo visten distinto. */
+  var ARC = "M8.4 15.6 Q3.4 16.4 1.2 21.4";
+
+  function fx(kind) {
+    if (kind === "dotted")
+      return '<path class="stream" d="' + ARC + '" stroke-width="1.1" stroke-dasharray="0.9 1.9"/>';
+    if (kind === "solid")
+      return '<path class="stream" d="' + ARC + '" stroke-width="1.25"/>';
+    if (kind === "drops")
+      return '<path class="stream" d="' + ARC + '" stroke-width="1" stroke-dasharray="0.7 2.2"/>' +
+             '<circle class="drop" cx="1.2" cy="21" r="0.55"/>' +
+             '<circle class="drop d2" cx="2.1" cy="21.2" r="0.42"/>';
+    if (kind === "puddle")
+      return '<path class="stream" d="' + ARC + '" stroke-width="1.1" stroke-dasharray="0.9 1.9"/>' +
+             '<ellipse class="puddle" cx="1.4" cy="21.5" rx="3.2" ry="0.75"/>';
+    return "";
+  }
+
+  /* ── Construcción de una tarjeta ───────────────────────────────────── */
+  function card(host, spec) {
+    var el = document.createElement("div");
+    el.className = "opt";
+    el.innerHTML =
+      '<div class="stagewrap"><div class="bar"></div></div>' +
+      '<div class="meta">' +
+        '<div class="name">' + spec.n + ' · ' + spec.name + '</div>' +
+        '<div class="desc">' + spec.desc + '</div>' +
+        '<div class="cost">' + spec.cost + '</div>' +
+        '<button class="replay" type="button">repetir</button>' +
+      '</div>';
+    host.appendChild(el);
+
+    var bar = el.querySelector(".bar");
+    spec.build(bar);
+
+    var actor = document.createElement("div");
+    actor.className = "actor";
+    actor.innerHTML = dogSVG(spec.variant);
+    bar.appendChild(actor);
+
+    if (spec.fx) actor.querySelector(".fx").innerHTML = fx(spec.fx);
+
+    var stop = null;
+    function run() {
+      if (stop) stop();
+      stop = spec.play(actor, bar, el);
+    }
+    el.querySelector(".replay").addEventListener("click", run);
+    run();
+    if (!reduced && spec.loop !== false) setInterval(run, spec.loop || 5200);
+  }
+
+  /* Helpers de animación: posición y transformaciones sobre el actor. */
+  function at(actor, x, y, ms, ease) {
+    actor.style.transition = ms
+      ? "transform " + ms + "ms " + (ease || "linear")
+      : "none";
+    actor.style.transform = "translate(" + x + "px," + (y || 0) + "px)";
+  }
+  function face(actor, left) { actor.classList.toggle("flip", !!left); }
+  function legs(actor, on) {
+    var b = actor.querySelector(".body");
+    b.style.animation = on ? "none" : "none";
+  }
+  function timers(list) {
+    var ids = list.map(function (t) { return setTimeout(t.f, t.at); });
+    return function () { ids.forEach(clearTimeout); };
+  }
+
+  /* ── Widgets de la barra simulada ──────────────────────────────────── */
+  function widgets(bar, which) {
+    var w = bar.clientWidth || 220;
+    function add(left, width, cls, label) {
+      var d = document.createElement("div");
+      d.className = "widget" + (cls ? " " + cls : "");
+      d.style.left = left + "px";
+      d.style.width = width + "px";
+      if (label) d.innerHTML = '<span class="lbl">' + label + "</span>";
+      bar.appendChild(d);
+      return d;
+    }
+    if (which === "clock") add(Math.round(w * 0.52), 54, "clock", "21:47");
+    if (which === "few") { add(8, 22); add(Math.round(w * 0.5), 46, "clock", "21:47"); add(w - 40, 30); }
+    return bar;
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
+     GESTO 1 · EL PIS
+  ════════════════════════════════════════════════════════════════════ */
+  var peeOpts = [
+    {
+      n: "1", name: "arco punteado", variant: "pee", fx: "dotted",
+      desc: "El arco de tu dibujo, tal cual: una línea de puntos que sale y cae.",
+      cost: "<b>Lo más liviano.</b> A tamaño real son cuatro o cinco píxeles sueltos: se entiende por la forma del arco, no por el detalle.",
+      build: function (bar) { widgets(bar, "clock"); },
+      play: peePlay
+    },
+    {
+      n: "2", name: "arco continuo", variant: "pee", fx: "solid",
+      desc: "El mismo arco pero como línea llena, más gráfico y más visible.",
+      cost: "<b>Se lee mejor a 28 px</b>, pero pesa más en la silueta: a esa escala una línea llena compite con las patas.",
+      build: function (bar) { widgets(bar, "clock"); },
+      play: peePlay
+    },
+    {
+      n: "3", name: "arco y gotas", variant: "pee", fx: "drops",
+      desc: "El arco punteado, y donde cae quedan dos gotitas que rebotan.",
+      cost: "<b>Más narrativo:</b> se entiende que algo llegó al piso. Dos elementos más que animar.",
+      build: function (bar) { widgets(bar, "clock"); },
+      play: peePlay
+    },
+    {
+      n: "4", name: "y deja charquito", variant: "pee", fx: "puddle",
+      desc: "El arco, y abajo se va formando un charco que queda unos segundos.",
+      cost: "<b>El más gracioso y el más invasivo:</b> deja una marca en la barra después de que el perro se fue.",
+      build: function (bar) { widgets(bar, "clock"); },
+      play: peePlay
+    }
+  ];
+
+  function peePlay(actor, bar) {
+    var w = bar.clientWidth;
+    var target = Math.round(w * 0.52);          // el reloj
+    var spot = target + 58;                     // se para a su derecha
+    var stream = actor.querySelector(".stream");
+    var drops = actor.querySelectorAll(".drop");
+    var puddle = actor.querySelector(".puddle");
+
+    function reset() {
+      if (stream) { stream.style.transition = "none"; stream.style.opacity = 0; }
+      drops.forEach(function (d) { d.style.transition = "none"; d.style.opacity = 0; d.style.transform = "none"; });
+      if (puddle) { puddle.style.transition = "none"; puddle.style.opacity = 0; puddle.setAttribute("rx", "0.4"); }
+    }
+    reset();
+    face(actor, false);
+    at(actor, w + 10, 0, 0);
+
+    return timers([
+      { at: 60,   f: function () { at(actor, spot, 0, 1400, "linear"); } },
+      { at: 1500, f: function () {
+          if (stream) { stream.style.transition = "opacity 260ms ease"; stream.style.opacity = .95; }
+        } },
+      { at: 1900, f: function () {
+          drops.forEach(function (d, i) {
+            d.style.transition = "opacity 200ms ease, transform 500ms ease-in";
+            setTimeout(function () {
+              d.style.opacity = .9;
+              d.style.transform = "translate(" + (-0.6 - i * 0.5) + "px, 0.5px)";
+            }, i * 260);
+          });
+          if (puddle) {
+            puddle.style.transition = "opacity 400ms ease";
+            puddle.style.opacity = .55;
+            var r = 0.4;
+            var grow = setInterval(function () {
+              r += 0.35; puddle.setAttribute("rx", r.toFixed(2));
+              if (r > 3) clearInterval(grow);
+            }, 160);
+          }
+        } },
+      { at: 3400, f: function () {
+          if (stream) { stream.style.transition = "opacity 300ms ease"; stream.style.opacity = 0; }
+          drops.forEach(function (d) { d.style.opacity = 0; });
+        } },
+      { at: 3900, f: function () { face(actor, false); at(actor, w + 20, 0, 1400, "linear"); } }
+    ]);
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
+     GESTO 2 · EL SALTO
+  ════════════════════════════════════════════════════════════════════ */
+  var jumpOpts = [
+    {
+      n: "1", name: "un salto largo", variant: "jump",
+      desc: "Toma carrera y se tira de un lado al otro en un solo arco.",
+      cost: "<b>El más legible:</b> un gesto, un arco, se entiende de reojo. Recorre poco.",
+      build: function (bar) { widgets(bar, "few"); },
+      play: function (a, b) { return hops(a, b, [{ d: 90, h: 26 }]); }
+    },
+    {
+      n: "2", name: "zigzag", variant: "jump",
+      desc: "Tres saltitos encadenados que lo llevan de acá para allá.",
+      cost: "<b>El que más se ve como jugar.</b> Es el más movedizo: si te molesta por el rabillo del ojo, va a ser éste.",
+      build: function (bar) { widgets(bar, "few"); },
+      play: function (a, b) { return hops(a, b, [{ d: 52, h: 20 }, { d: -34, h: 16 }, { d: 60, h: 22 }]); }
+    },
+    {
+      n: "3", name: "cabriola", variant: "jump",
+      desc: "Un salto grande y, al caer, un rebote corto. Como cuando aterrizan mal.",
+      cost: "<b>El más perro.</b> El rebote es lo que le da naturalidad, y cuesta un solo arco más.",
+      build: function (bar) { widgets(bar, "few"); },
+      play: function (a, b) { return hops(a, b, [{ d: 84, h: 26 }, { d: 20, h: 9 }]); }
+    },
+    {
+      n: "4", name: "ida y vuelta", variant: "jump",
+      desc: "Salta a un lado, frena, y vuelve de un salto al lugar donde estaba.",
+      cost: "<b>El más contenido:</b> termina donde empezó, así que nunca te deja el perro en un lugar raro.",
+      build: function (bar) { widgets(bar, "few"); },
+      play: function (a, b) { return hops(a, b, [{ d: 72, h: 24 }, { d: -72, h: 24, pause: 700 }]); }
+    }
+  ];
+
+  function hops(actor, bar, seq) {
+    var w = bar.clientWidth;
+    var x = Math.round(w * 0.22);
+    at(actor, x, 0, 0);
+    face(actor, false);
+
+    var list = [];
+    var t = 400;
+    seq.forEach(function (hop) {
+      var up = 260, down = 240;
+      var dest = x + hop.d;
+      var mid = x + hop.d / 2;
+      var from = x;
+      list.push({ at: t, f: (function (mid, hp, from) {
+        return function () {
+          face(actor, hp.d < 0);
+          at(actor, mid, -hp.h, up, "cubic-bezier(.2,.65,.4,1)");
+        };
+      })(mid, hop, from) });
+      list.push({ at: t + up, f: (function (dest) {
+        return function () { at(actor, dest, 0, down, "cubic-bezier(.6,0,.8,.45)"); };
+      })(dest) });
+      x = dest;
+      t += up + down + (hop.pause || 120);
+    });
+    return timers(list);
+  }
+
+  /* ════════════════════════════════════════════════════════════════════
+     GESTO 3 · EL PASEO
+  ════════════════════════════════════════════════════════════════════ */
+  var patrolOpts = [
+    {
+      n: "1", name: "de punta a punta", variant: "walk",
+      desc: "Cruza la barra entera de un borde al otro, sin parar, y vuelve.",
+      cost: "<b>El más simple.</b> Recorre todo, pero pasa por encima de cada widget del camino.",
+      build: function (bar) { widgets(bar, "few"); },
+      loop: 7200,
+      play: function (actor, bar) {
+        var w = bar.clientWidth;
+        at(actor, -60, 0, 0); face(actor, false);
+        return timers([
+          { at: 80,   f: function () { at(actor, w - 56, 0, 3000, "linear"); } },
+          { at: 3300, f: function () { face(actor, true); } },
+          { at: 3600, f: function () { at(actor, -60, 0, 3000, "linear"); } }
+        ]);
+      }
+    },
+    {
+      n: "2", name: "da la vuelta al mundo", variant: "walk",
+      desc: "Sale por un borde de la pantalla y entra por el otro, como Pac-Man.",
+      cost: "<b>El que más lo hace parecer vivo.</b> Gratis de implementar: la ventana ya ocupa toda la pantalla.",
+      build: function (bar) { widgets(bar, "few"); },
+      loop: 7200,
+      play: function (actor, bar) {
+        var w = bar.clientWidth;
+        at(actor, -60, 0, 0); face(actor, false);
+        return timers([
+          { at: 80,   f: function () { at(actor, w + 60, 0, 3400, "linear"); } },
+          { at: 3600, f: function () { at(actor, -60, 0, 0); } },
+          { at: 3700, f: function () { at(actor, w + 60, 0, 3400, "linear"); } }
+        ]);
+      }
+    },
+    {
+      n: "3", name: "ronda con paradas", variant: "walk",
+      desc: "Recorre la barra parando en cada hueco un par de segundos, como quien patrulla.",
+      cost: "<b>El más tranquilo de mirar.</b> Sigue respetando los huecos: nunca se detiene encima de nada.",
+      build: function (bar) { widgets(bar, "few"); },
+      loop: 8600,
+      play: function (actor, bar) {
+        var w = bar.clientWidth;
+        var a = Math.round(w * 0.26), b = Math.round(w * 0.68);
+        at(actor, 6, 0, 0); face(actor, false);
+        return timers([
+          { at: 300,  f: function () { at(actor, a, 0, 1200, "linear"); } },
+          { at: 3100, f: function () { at(actor, b, 0, 1400, "linear"); } },
+          { at: 6000, f: function () { face(actor, true); } },
+          { at: 6300, f: function () { at(actor, 6, 0, 2000, "linear"); } }
+        ]);
+      }
+    },
+    {
+      n: "4", name: "corrida y vuelta", variant: "walk",
+      desc: "Cada tanto se manda una corrida rápida hasta la otra punta, y vuelve a su hueco.",
+      cost: "<b>El más expresivo sin ser molesto:</b> casi siempre está quieto, y cuando se mueve, se nota.",
+      build: function (bar) { widgets(bar, "few"); },
+      loop: 7600,
+      play: function (actor, bar) {
+        var w = bar.clientWidth;
+        var home = Math.round(w * 0.24);
+        at(actor, home, 0, 0); face(actor, false);
+        return timers([
+          { at: 900,  f: function () { at(actor, w - 56, 0, 1100, "cubic-bezier(.3,0,.5,1)"); } },
+          { at: 2400, f: function () { face(actor, true); } },
+          { at: 2700, f: function () { at(actor, home, 0, 1100, "cubic-bezier(.3,0,.5,1)"); } },
+          { at: 3900, f: function () { face(actor, false); } }
+        ]);
+      }
+    }
+  ];
+
+  /* ── Montaje ───────────────────────────────────────────────────────── */
+  function build(hostId, opts) {
+    var host = document.getElementById(hostId);
+    opts.forEach(function (o) { card(host, o); });
+  }
+
+  requestAnimationFrame(function () {
+    build("pee", peeOpts);
+    build("jump", jumpOpts);
+    build("patrol", patrolOpts);
+  });
+})();
+</script>

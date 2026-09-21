@@ -1,0 +1,9 @@
+# Las piezas compartidas del dibujo. El qmldir está para que el import de
+# directorio resuelva los tipos también fuera de un módulo instalado.
+Body 1.0 Body.qml
+Drop 1.0 Drop.qml
+Ear 1.0 Ear.qml
+Ellipse 1.0 Ellipse.qml
+Head 1.0 Head.qml
+Leg 1.0 Leg.qml
+Tail 1.0 Tail.qml

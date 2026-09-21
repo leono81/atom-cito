@@ -1,0 +1,5 @@
+# El tipo base, para que el import de directorio lo resuelva fuera de un
+# módulo instalado. Las poses NO se listan acá: el registro es Poses.js y
+# el renderer las carga por URL. Agregar una pose sigue siendo un archivo
+# nuevo y una línea en Poses.js.
+AtomPose 1.0 AtomPose.qml

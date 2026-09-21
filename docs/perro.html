@@ -1,0 +1,954 @@
+<title>Viernes, el perro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+  /* ── Tokens: tema Retro 82, igual que el resto del proyecto ───────────── */
+  :root {
+    --ink:       #05182e;
+    --ink-soft:  #2f4358;
+    --ink-faint: #6b7f92;
+    --paper:     #f7eeda;
+    --paper-2:   #f1e3c8;
+    --rule:      #ddc9a4;
+    --accent:    #c96a1c;
+    --teal:      #2a6b78;
+    --urgent:    #d6421a;
+
+    /* El escritorio no cambia con el tema de la página: es una captura. */
+    --dk-bg:     #05182e;
+    --dk-bg-2:   #031222;
+    --dk-bg-3:   #020c17;
+    --dk-fg:     #f6dcac;
+    --dk-dim:    #3f8f8a;
+    --dk-muted:  #2a6b78;
+    --dk-accent: #faa968;
+    --dk-urgent: #f85525;
+    --dk-warn:   #e97b3c;
+    --grid:      rgba(140,191,184,.13);
+
+    --shadow: 0 1px 2px rgba(5,24,46,.07), 0 10px 28px -14px rgba(5,24,46,.25);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #f6dcac; --ink-soft: #c2b48f; --ink-faint: #8aa0a6;
+      --paper: #05182e; --paper-2: #0a2540; --rule: #17385a;
+      --accent: #faa968; --teal: #8cbfb8; --urgent: #f85525;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 14px 34px -18px rgba(0,0,0,.75);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #f6dcac; --ink-soft: #c2b48f; --ink-faint: #8aa0a6;
+    --paper: #05182e; --paper-2: #0a2540; --rule: #17385a;
+    --accent: #faa968; --teal: #8cbfb8; --urgent: #f85525;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 14px 34px -18px rgba(0,0,0,.75);
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Archivo", system-ui, sans-serif;
+    font-size: 15px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 900px; margin: 0 auto; padding-inline: 20px; padding-block: 40px 76px; }
+
+  h1, h2 { margin: 0; text-wrap: balance; }
+  h1 { font-size: clamp(30px, 6vw, 46px); font-weight: 700; letter-spacing: -.022em; line-height: 1.06; }
+  h2 { font-size: clamp(20px, 3.4vw, 26px); font-weight: 600; letter-spacing: -.012em; }
+  p { margin: 0; }
+
+  .lead { color: var(--ink-soft); font-size: 17px; max-width: 64ch; }
+  .note { color: var(--ink-faint); font-size: 13.5px; max-width: 64ch; }
+
+  .eyebrow {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 11px; font-weight: 500; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--teal);
+  }
+
+  .stack-l { display: flex; flex-direction: column; gap: 30px; }
+  .stack   { display: flex; flex-direction: column; gap: 13px; }
+
+  section.blk { display: flex; flex-direction: column; gap: 16px; padding-top: 30px; border-top: 1px solid var(--rule); }
+  section.blk.first { border-top: none; padding-top: 0; }
+
+  code, .mono { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .92em; }
+  code { color: var(--accent); }
+
+  /* ── Hoja de modelo: el panel donde vive el perro ─────────────────────── */
+  .sheet {
+    position: relative;
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 100% 22px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 22px 100%,
+      var(--dk-bg-2);
+    border: 1px solid rgba(250,169,104,.18);
+    border-radius: 7px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .sheet-hd {
+    display: flex; justify-content: space-between; align-items: baseline;
+    gap: 12px; flex-wrap: wrap;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(246,220,172,.1);
+    background: rgba(2,12,23,.5);
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--dk-muted);
+  }
+  .sheet-hd .st { color: var(--dk-accent); }
+
+  /* El escenario: el perro camina sobre una línea de piso */
+  .stage { position: relative; height: 210px; }
+  .stage .floor {
+    position: absolute; left: 0; right: 0; bottom: 46px;
+    border-bottom: 1px dashed rgba(246,220,172,.22);
+  }
+  .stage .floor::after {
+    content: "piso";
+    position: absolute; right: 8px; top: 4px;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 9px; letter-spacing: .1em; color: var(--dk-muted);
+  }
+
+  .actor {
+    position: absolute; bottom: 46px; left: 0;
+    width: 150px; height: 106px;
+    transform-origin: 50% 100%;
+    transition: transform 1.4s linear;
+    will-change: transform;
+  }
+  .actor.flip .dog { transform: scaleX(-1); }
+
+  /* ── El perro ─────────────────────────────────────────────────────────── */
+  .dog { width: 100%; height: 100%; display: block; overflow: visible; color: var(--dk-fg); transition: color .5s ease; }
+  .dog .fill   { fill: var(--dk-bg); stroke: currentColor; stroke-width: 1.05; stroke-linejoin: round; }
+  .dog .solid  { fill: currentColor; stroke: none; }
+  .dog .leg    { stroke: currentColor; stroke-width: 2.1; stroke-linecap: round; fill: none; }
+  .dog .leg.far{ opacity: .45; }
+  .dog .tail   { stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; fill: none; }
+  .dog .lid    { stroke: currentColor; stroke-width: .9; stroke-linecap: round; fill: none; }
+
+  .pose { opacity: 0; transition: opacity .17s ease; pointer-events: none; }
+  .pose.on { opacity: 1; }
+
+  /* Pivotes: cada parte rota desde su articulación, en coordenadas del viewBox */
+  .dog [class*="leg-"] { transform-box: view-box; }
+  .leg-fn { transform-origin: 21.2px 15.4px; }
+  .leg-ff { transform-origin: 19.4px 15.4px; }
+  .leg-bn { transform-origin: 10.4px 15.4px; }
+  .leg-bf { transform-origin: 8.6px  15.4px; }
+  .tail-g { transform-box: view-box; transform-origin: 6.2px 10.2px; }
+  .ear-g  { transform-box: view-box; transform-origin: 23.2px 4.8px; }
+  .tail-sit { transform-box: view-box; transform-origin: 6.4px 19.4px; }
+
+  /* Caminar: patas cruzadas en contrafase, cuerpo que rebota */
+  .walking .leg-fn, .walking .leg-bf { animation: legA .5s ease-in-out infinite; }
+  .walking .leg-ff, .walking .leg-bn { animation: legB .5s ease-in-out infinite; }
+  .walking .body-g { animation: bob .5s ease-in-out infinite; }
+  .walking .ear-g  { animation: flop .5s ease-in-out infinite; }
+  .walking .tail-g { animation: wag .38s ease-in-out infinite; }
+
+  @keyframes legA { 0%,100% { transform: rotate(17deg); }  50% { transform: rotate(-17deg); } }
+  @keyframes legB { 0%,100% { transform: rotate(-17deg); } 50% { transform: rotate(17deg); } }
+  @keyframes bob  { 0%,100% { transform: translateY(0); }  50% { transform: translateY(-.45px); } }
+  @keyframes flop { 0%,100% { transform: rotate(-4deg); }  50% { transform: rotate(7deg); } }
+  @keyframes wag  { 0%,100% { transform: rotate(-13deg); } 50% { transform: rotate(13deg); } }
+  @keyframes wagslow { 0%,100% { transform: rotate(-7deg); } 50% { transform: rotate(7deg); } }
+  @keyframes breathe { 0%,100% { transform: translateY(0) scaleY(1); } 50% { transform: translateY(-.35px) scaleY(1.02); } }
+
+  /* Quieto: respira. Sentado y echado: respira más lento. */
+  .dog .body-g { transform-box: view-box; transform-origin: 14px 17px; }
+  .st-stand:not(.walking) .body-g { animation: breathe 3.2s ease-in-out infinite; }
+  .st-stand:not(.walking) .tail-g { animation: wagslow 1.9s ease-in-out infinite; }
+  .st-sit  .body-g { animation: breathe 3.8s ease-in-out infinite; }
+  .st-lie  .body-g { animation: breathe 4.6s ease-in-out infinite; }
+  .st-sleep .body-g { animation: breathe 6s ease-in-out infinite; }
+
+  /* Estados de ánimo: el color acompaña, la pose manda */
+  .dog.m-alert { color: var(--dk-warn); }
+  .dog.m-tired { color: var(--dk-urgent); }
+  .dog.m-away  { color: var(--dk-muted); }
+  .dog.m-mute  { color: #4a5a66; }
+  .dog.m-mute .body-g, .dog.m-mute .tail-g, .dog.m-mute .ear-g { animation: none !important; }
+
+  .dog.speaking { color: var(--dk-accent); }
+  .dog.speaking .tail-g { animation: wag .3s ease-in-out infinite; }
+  .dog.speaking .ear-g  { animation: flop .3s ease-in-out infinite; }
+
+  .zzz { opacity: 0; transition: opacity .3s ease; }
+  .st-sleep .zzz { opacity: .8; animation: float 3s ease-in-out infinite; }
+  @keyframes float {
+    0%   { transform: translate(0,0);      opacity: 0; }
+    30%  { opacity: .85; }
+    100% { transform: translate(2px,-5px); opacity: 0; }
+  }
+
+  /* ── Poses en fila ────────────────────────────────────────────────────── */
+  .poses { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .pose-card {
+    background: var(--dk-bg); border: 1px solid rgba(246,220,172,.12);
+    border-radius: 6px; padding: 10px 10px 12px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .pose-card .win { position: relative; height: 86px; }
+  .pose-card .win .actor { bottom: 8px; left: 50%; margin-left: -75px; transition: none; }
+  .pose-card .win .gl {
+    position: absolute; left: 10px; right: 10px; bottom: 8px;
+    border-bottom: 1px dashed rgba(246,220,172,.18);
+  }
+  .pose-card .lbl {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--dk-accent);
+  }
+  .pose-card .desc { font-size: 11.5px; line-height: 1.45; color: var(--dk-muted); }
+
+  /* ── Máquina de estados ───────────────────────────────────────────────── */
+  .fsm {
+    display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px;
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+  }
+  .fsm .node {
+    flex: 1 1 130px;
+    background: var(--paper-2); border: 1px solid var(--rule);
+    border-radius: 5px; padding: 10px 11px;
+    display: flex; flex-direction: column; gap: 4px;
+    transition: border-color .25s ease, background .25s ease;
+  }
+  .fsm .node.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--paper-2)); }
+  .fsm .node .n { font-size: 11.5px; font-weight: 700; color: var(--ink); letter-spacing: .04em; }
+  .fsm .node .t { font-size: 10.5px; color: var(--ink-faint); line-height: 1.45; }
+
+  /* ── Barra ────────────────────────────────────────────────────────────── */
+  .screen {
+    position: relative; border-radius: 7px; overflow: hidden;
+    background:
+      radial-gradient(120% 150% at 78% -10%, #123a52 0%, transparent 55%),
+      var(--dk-bg-2);
+    border: 1px solid rgba(250,169,104,.16);
+    box-shadow: var(--shadow);
+    user-select: none;
+  }
+  .bar {
+    position: relative; height: 38px; display: flex; align-items: center;
+    background: var(--dk-bg); color: var(--dk-fg);
+    font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12px;
+    padding-inline: 8px; gap: 8px;
+    border-bottom: 1px solid rgba(246,220,172,.1);
+  }
+  .bar-sec { display: flex; align-items: center; gap: 9px; min-width: 0; }
+  .bar-sec.center { flex: 1; justify-content: center; }
+  .bar-sec.right { justify-content: flex-end; }
+  .w { display: flex; align-items: center; gap: 4px; opacity: .84; white-space: nowrap; position: relative; }
+  .ws { display: flex; gap: 4px; }
+  .ws i { font-style: normal; width: 13px; text-align: center; opacity: .45; font-size: 11px; }
+  .ws i.on { opacity: 1; color: var(--dk-accent); }
+  .clock { font-weight: 500; opacity: .95; }
+
+  /* Zonas: dónde puede pararse y dónde no */
+  .zones { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .25s ease; }
+  .zones.on { opacity: 1; }
+  .zone { position: absolute; top: 2px; bottom: 2px; border-radius: 3px; }
+  .zone.ok  { background: rgba(140,191,184,.16); border: 1px dashed rgba(140,191,184,.5); }
+  .zone.no  { background: rgba(248,85,37,.13);   border: 1px dashed rgba(248,85,37,.42); }
+
+  .bar .dogwrap {
+    position: absolute; bottom: 0; left: 0;
+    width: 44px; height: 31px;
+    transition: transform 1.4s linear;
+    will-change: transform; z-index: 4;
+  }
+  .bar .dogwrap.flip .dog { transform: scaleX(-1); }
+
+  .bubble {
+    position: absolute; top: 46px; z-index: 6;
+    max-width: min(300px, calc(100% - 24px));
+    background: var(--dk-bg-3); border: 1px solid var(--dk-accent);
+    border-radius: 5px; padding: 9px 11px; color: var(--dk-fg);
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 11.5px; line-height: 1.5;
+    opacity: 0; transform: translateY(-5px); pointer-events: none;
+    transition: opacity .22s ease, transform .22s ease;
+    box-shadow: 0 10px 30px -10px rgba(0,0,0,.75);
+  }
+  .bubble.on { opacity: 1; transform: translateY(0); }
+
+  .win-body {
+    margin: 16px 14px 14px; border: 1px solid rgba(246,220,172,.14);
+    border-radius: 5px; background: rgba(2,12,23,.72); padding: 10px 12px;
+    font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 11px;
+    color: var(--dk-dim); line-height: 1.7; min-height: 74px;
+  }
+  .win-body .prompt { color: var(--dk-accent); }
+  .win-body .dim { color: var(--dk-muted); }
+
+  /* ── Controles ────────────────────────────────────────────────────────── */
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; }
+  button {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 11.5px; font-weight: 500; letter-spacing: .02em;
+    color: var(--ink); background: var(--paper-2);
+    border: 1px solid var(--rule); border-radius: 4px;
+    padding: 7px 12px; cursor: pointer;
+    transition: border-color .15s ease, color .15s ease, background .15s ease;
+  }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+
+  /* ── Decisiones de diseño ─────────────────────────────────────────────── */
+  .calls { display: grid; gap: 8px; }
+  .call {
+    display: grid; grid-template-columns: 112px 1fr; gap: 14px;
+    align-items: baseline; padding-block: 9px;
+    border-top: 1px solid var(--rule); font-size: 14px; color: var(--ink-soft);
+  }
+  .call:first-child { border-top: none; }
+  .call dt {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--teal); margin: 0;
+  }
+  .call dd { margin: 0; }
+  .call b { color: var(--ink); font-weight: 600; }
+  @media (max-width: 560px) { .call { grid-template-columns: 1fr; gap: 3px; } }
+
+  /* ── Escala real ──────────────────────────────────────────────────────── */
+  .scale-strip {
+    display: flex; flex-wrap: wrap; align-items: flex-end; gap: 26px;
+    background: var(--dk-bg); border-radius: 6px;
+    border: 1px solid rgba(246,220,172,.12); padding: 18px;
+  }
+  .scale-item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .scale-item .holder { position: relative; }
+  .scale-item .holder .actor { position: relative; bottom: auto; left: auto; transition: none; }
+  .scale-item .cap {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 10px; color: var(--dk-muted); letter-spacing: .05em;
+  }
+
+  footer.page { border-top: 1px solid var(--rule); padding-top: 22px; color: var(--ink-faint); font-size: 13.5px; }
+
+  @media (max-width: 620px) { .hide-sm { display: none; } .bar { gap: 5px; padding-inline: 6px; } .bar-sec { gap: 6px; } .stage { height: 180px; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dog *, .actor, .bar .dogwrap { animation: none !important; transition-duration: .01ms !important; }
+  }
+</style>
+
+<div class="wrap stack-l">
+
+  <header class="stack">
+    <div class="eyebrow">Omarchy · hoja de diseño · personaje</div>
+    <h1>Viernes, el perro</h1>
+    <p class="lead">
+      De cara flotante a bicho con cuerpo. Un perro de perfil, corto de patas y
+      de orejas caídas, que camina la barra, se sienta cuando llega, y se
+      acuesta si lo dejás tranquilo. Dibujado en vectores, con los colores de
+      Retro&nbsp;82.
+    </p>
+  </header>
+
+  <!-- ═══ ESCENARIO ══════════════════════════════════════════════════════ -->
+  <section class="blk first">
+    <div class="sheet">
+      <div class="sheet-hd">
+        <span>Viernes · perfil · 34×24 unidades</span>
+        <span>estado: <span class="st" id="heroState">parado</span></span>
+      </div>
+      <div class="stage" id="stage">
+        <div class="floor"></div>
+        <div class="actor" id="heroActor" data-dog="hero"></div>
+      </div>
+    </div>
+    <div class="controls">
+      <button type="button" data-act="walk">Que camine</button>
+      <button type="button" data-act="stand">Parado</button>
+      <button type="button" data-act="sit">Sentado</button>
+      <button type="button" data-act="lie">Echado</button>
+      <button type="button" data-act="sleep">Dormido</button>
+      <button type="button" data-act="speak">Que hable</button>
+      <button type="button" data-act="auto" aria-pressed="true">Ciclo solo</button>
+    </div>
+    <p class="note">
+      El ciclo automático es el comportamiento real: camina, llega, se queda
+      parado, se sienta al rato, y termina echado. Cualquier cosa que tenga
+      para decirte lo pone de pie otra vez.
+    </p>
+  </section>
+
+  <!-- ═══ POSES ══════════════════════════════════════════════════════════ -->
+  <section class="blk">
+    <div class="stack">
+      <div class="eyebrow">Las cuatro poses</div>
+      <h2>Una pose por estado de ánimo</h2>
+      <p class="lead">
+        Acá está la ventaja de darle cuerpo: el humor deja de ser un cambio de
+        color y pasa a ser postura. Se lee de reojo, sin mirar fijo — que es
+        exactamente cómo vas a mirar la barra.
+      </p>
+    </div>
+    <div class="poses" id="poses"></div>
+  </section>
+
+  <!-- ═══ FSM ════════════════════════════════════════════════════════════ -->
+  <section class="blk">
+    <div class="stack">
+      <div class="eyebrow">Comportamiento</div>
+      <h2>Qué hace cuando no hace nada</h2>
+      <p class="lead">
+        Un personaje que se queda quieto es un ícono. La secuencia de abajo
+        corre sola mientras trabajás; el nodo encendido es el estado del perro
+        de arriba en este momento.
+      </p>
+    </div>
+    <div class="fsm" id="fsm">
+      <div class="node" data-node="walk"><span class="n">CAMINA</span><span class="t">Hacia un hueco libre de la barra. Nunca se detiene arriba de un widget.</span></div>
+      <div class="node" data-node="stand"><span class="n">LLEGA · PARADO</span><span class="t">Respira, cola lenta. 6 segundos.</span></div>
+      <div class="node" data-node="sit"><span class="n">SE SIENTA</span><span class="t">Si no pasa nada. 14 segundos.</span></div>
+      <div class="node" data-node="lie"><span class="n">SE ACUESTA</span><span class="t">Se aburrió. Se queda hasta que algo lo despierte.</span></div>
+      <div class="node" data-node="sleep"><span class="n">DUERME</span><span class="t">Solo cuando vos no estás: 3 minutos sin teclado.</span></div>
+    </div>
+  </section>
+
+  <!-- ═══ EN LA BARRA ════════════════════════════════════════════════════ -->
+  <section class="blk">
+    <div class="stack">
+      <div class="eyebrow">Integración</div>
+      <h2>Camina toda la barra, pero para en los huecos</h2>
+      <p class="lead">
+        Esto resuelve lo que te molestaba de la opción paseante: puede recorrer
+        la barra entera, pero los lugares donde <em>se detiene</em> son solo los
+        espacios libres entre widgets. Prendé las zonas para verlo.
+      </p>
+    </div>
+
+    <div class="screen" id="barScreen">
+      <div class="bar" id="bar">
+        <div class="bar-sec left">
+          <div class="w">
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          </div>
+          <div class="w ws"><i class="on">1</i><i>2</i><i>3</i></div>
+        </div>
+        <div class="bar-sec center">
+          <div class="w clock">domingo 21:47</div>
+          <div class="w hide-sm">
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.1" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M8 1.6v1.5M8 12.9v1.5M1.6 8h1.5M12.9 8h1.5M3.5 3.5l1 1M11.5 11.5l1 1M12.5 3.5l-1 1M4.5 11.5l-1 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+        <div class="bar-sec right">
+          <div class="w hide-sm">
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M1.8 6.2a9 9 0 0 1 12.4 0M4.2 8.8a5.6 5.6 0 0 1 7.6 0" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="8" cy="12" r="1.2" fill="currentColor"/></svg>
+          </div>
+          <div class="w">
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 6h2.3L8.6 3.2v9.6L5.3 10H3z" fill="currentColor"/><path d="M10.8 6.2a2.8 2.8 0 0 1 0 3.6" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+          </div>
+          <div class="w">
+            <svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.2v5.2" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M4.6 4.7a4.6 4.6 0 1 0 6.8 0" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+        <div class="zones" id="zones"></div>
+        <div class="dogwrap" id="barDog" data-dog="bar"></div>
+      </div>
+      <div class="bubble" id="barBubble"></div>
+      <div class="win-body">
+        <div><span class="prompt">~/Projects/kenos</span> herdr</div>
+        <div class="dim">› 3 panes · claude trabajando en api/auth</div>
+        <div class="dim">› 47 min en esta ventana</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button type="button" data-bar="go">Mandalo a otro hueco</button>
+      <button type="button" data-bar="zones" aria-pressed="false">Mostrar zonas</button>
+      <button type="button" data-bar="speak">Que hable</button>
+      <button type="button" data-bar="patrol" aria-pressed="false">Dejarlo suelto</button>
+    </div>
+    <p class="note">
+      Las zonas se recalculan de la barra real: si agregás, sacás o movés un
+      widget, los huecos cambian solos. No hay posiciones escritas a mano.
+    </p>
+  </section>
+
+  <!-- ═══ DECISIONES ═════════════════════════════════════════════════════ -->
+  <section class="blk">
+    <div class="stack">
+      <div class="eyebrow">Decisiones de dibujo</div>
+      <h2>Por qué este perro y no otro</h2>
+    </div>
+    <dl class="calls">
+      <div class="call"><dt>Perfil</dt><dd><b>Mira hacia donde camina, no hacia vos.</b> Es el costo de tener cuerpo: un perro de frente no puede caminar. A cambio, gana postura, que a 16&nbsp;px comunica más que una cara.</dd></div>
+      <div class="call"><dt>Patas cortas</dt><dd><b>Cuerpo largo y patas cortas.</b> Un perro de proporciones realistas a esta altura son cuatro rayitas temblando. Lo bajo y compacto sobrevive a la miniatura.</dd></div>
+      <div class="call"><dt>Orejas</dt><dd><b>Caídas, no paradas.</b> Rompen la silueta de la cabeza y se convierten en una pieza animable: flotan al caminar, se sacuden cuando habla.</dd></div>
+      <div class="call"><dt>Cola</dt><dd><b>Es el medidor de ánimo.</b> Rápida cuando te habla, lenta cuando está tranquilo, quieta cuando está frito. Es lo que más se nota de lejos.</dd></div>
+      <div class="call"><dt>Patas traseras</dt><dd><b>Las dos del fondo van al 45% de opacidad.</b> Da profundidad sin agregar una sola línea nueva.</dd></div>
+      <div class="call"><dt>Relleno</dt><dd><b>El cuerpo se rellena con el color de la barra, no con transparente.</b> Así las patas del fondo quedan detrás del cuerpo y la silueta se lee limpia sobre cualquier fondo.</dd></div>
+    </dl>
+  </section>
+
+  <!-- ═══ ESCALA ═════════════════════════════════════════════════════════ -->
+  <section class="blk">
+    <div class="stack">
+      <div class="eyebrow">La letra chica</div>
+      <h2>Tamaño real</h2>
+      <p class="lead">
+        Todo lo de arriba está ampliado. En tu barra de 26&nbsp;px el perro mide
+        unos 20 de alto por 28 de ancho. Esto es lo que vas a ver de verdad:
+      </p>
+    </div>
+    <div class="scale-strip" id="scales"></div>
+  </section>
+
+  <footer class="page">
+    El cerebro no cambia: <code>Service.qml</code> y <code>SidekickRules.js</code>
+    siguen decidiendo cuándo hablar. Lo que cambia es que ahora hay un
+    <code>Perro.qml</code> con cuatro poses y una máquina de estados de ocio, y
+    que el envase pasa a ser el plugin de tipo <code>panel</code> — la opción
+    paseante, con la regla de parar solo en los huecos.
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ════════════════════════════════════════════════════════════════════════
+     EL DIBUJO
+     Perro de perfil mirando a la derecha, en un viewBox de 34×24.
+     Cuatro poses completas en vez de un esqueleto articulado: a este tamaño
+     una pose bien dibujada gana siempre contra una interpolada.
+     Piso = y 21. Las patas del fondo van primero para que el cuerpo las tape.
+  ════════════════════════════════════════════════════════════════════════ */
+  function dogSVG() {
+    return '' +
+    '<svg class="dog" viewBox="0 0 34 24" aria-hidden="true">' +
+
+      /* ── PARADO / CAMINANDO ─────────────────────────────────────────── */
+      '<g class="pose p-stand">' +
+        '<g class="body-g">' +
+          '<line class="leg far leg-bf" x1="8.6"  y1="15.4" x2="8.6"  y2="20.6"/>' +
+          '<line class="leg far leg-ff" x1="19.4" y1="15.4" x2="19.4" y2="20.6"/>' +
+          '<g class="tail-g">' +
+            '<path class="tail" d="M6.4 10.2q-3.2-.6-3.1-4.3"/>' +
+          '</g>' +
+          '<rect class="fill" x="5.4" y="8.8" width="17.6" height="7.8" rx="3.9"/>' +
+          '<line class="leg leg-bn" x1="10.4" y1="15.4" x2="10.4" y2="20.8"/>' +
+          '<line class="leg leg-fn" x1="21.2" y1="15.4" x2="21.2" y2="20.8"/>' +
+          '<circle class="fill" cx="24.8" cy="8" r="3.9"/>' +
+          '<rect class="fill" x="26.8" y="7.6" width="5.3" height="3.7" rx="1.6"/>' +
+          '<circle class="solid" cx="31.5" cy="8.7" r="0.78"/>' +
+          '<circle class="solid eye" cx="25.3" cy="7.1" r="0.85"/>' +
+          '<path class="lid" d="M24.6 7.1q.7.8 1.4 0"/>' +
+          '<g class="ear-g">' +
+            '<ellipse class="fill" cx="23.2" cy="7.7" rx="1.55" ry="3.1" transform="rotate(-11 23.2 7.7)"/>' +
+          '</g>' +
+        '</g>' +
+      '</g>' +
+
+      /* ── SENTADO: grupa en el piso, pecho arriba ────────────────────── */
+      '<g class="pose p-sit">' +
+        '<g class="body-g">' +
+          '<g class="tail-sit">' +
+            '<path class="tail" d="M6.4 19.4q-3.4.5-3.6-1.9"/>' +
+          '</g>' +
+          '<line class="leg far" x1="19.2" y1="15.6" x2="19.2" y2="20.6"/>' +
+          '<rect class="fill" x="5.2" y="11.4" width="10.6" height="9.6" rx="4.6"/>' +
+          '<rect class="fill" x="11.6" y="9.2" width="10.8" height="8"  rx="3.9"/>' +
+          '<line class="leg" x1="21" y1="15.8" x2="21" y2="20.8"/>' +
+          '<ellipse class="fill" cx="13.4" cy="20.1" rx="2.3" ry="1.1"/>' +
+          '<circle class="fill" cx="24.6" cy="6.6" r="3.9"/>' +
+          '<rect class="fill" x="26.6" y="6.2" width="5.3" height="3.7" rx="1.6"/>' +
+          '<circle class="solid" cx="31.3" cy="7.3" r="0.78"/>' +
+          '<circle class="solid eye" cx="25.1" cy="5.7" r="0.85"/>' +
+          '<path class="lid" d="M24.4 5.7q.7.8 1.4 0"/>' +
+          '<g class="ear-g" style="transform-origin:23px 3.6px">' +
+            '<ellipse class="fill" cx="23" cy="6.4" rx="1.55" ry="3.1" transform="rotate(-9 23 6.4)"/>' +
+          '</g>' +
+        '</g>' +
+      '</g>' +
+
+      /* ── ECHADO: cuerpo en el piso, cabeza levantada ────────────────── */
+      '<g class="pose p-lie">' +
+        '<g class="body-g">' +
+          '<path class="tail" d="M5.6 19.2q-3.3.4-3.5-1.5"/>' +
+          '<rect class="fill" x="4.8" y="14.2" width="19" height="6.9" rx="3.4"/>' +
+          '<ellipse class="fill" cx="23.4" cy="19.9" rx="3.1" ry="1.25"/>' +
+          '<circle class="fill" cx="25.4" cy="12.6" r="3.8"/>' +
+          '<rect class="fill" x="27.3" y="12.2" width="5.2" height="3.6" rx="1.6"/>' +
+          '<circle class="solid" cx="31.9" cy="13.3" r="0.76"/>' +
+          '<circle class="solid eye" cx="25.9" cy="11.7" r="0.83"/>' +
+          '<path class="lid" d="M25.2 11.7q.7.8 1.4 0"/>' +
+          '<g class="ear-g" style="transform-origin:23.6px 9.6px">' +
+            '<ellipse class="fill" cx="23.7" cy="12.3" rx="1.5" ry="3" transform="rotate(-16 23.7 12.3)"/>' +
+          '</g>' +
+        '</g>' +
+      '</g>' +
+
+      /* ── DORMIDO: cabeza sobre las patas, ojos cerrados ─────────────── */
+      '<g class="pose p-sleep">' +
+        '<g class="body-g">' +
+          '<path class="tail" d="M5.6 19.4q-3.3.3-3.4-1.4"/>' +
+          '<rect class="fill" x="4.8" y="14.6" width="18.4" height="6.5" rx="3.2"/>' +
+          '<circle class="fill" cx="25.2" cy="16.9" r="3.7"/>' +
+          '<rect class="fill" x="27.1" y="16.8" width="5.2" height="3.5" rx="1.6"/>' +
+          '<circle class="solid" cx="31.7" cy="17.9" r="0.76"/>' +
+          '<path class="lid" d="M24.4 16.6q.9.9 1.8 0"/>' +
+          '<ellipse class="fill" cx="27.4" cy="20.2" rx="3.2" ry="1.1"/>' +
+          '<g class="ear-g" style="transform-origin:23.4px 14px">' +
+            '<ellipse class="fill" cx="23.4" cy="16.8" rx="1.5" ry="3" transform="rotate(-22 23.4 16.8)"/>' +
+          '</g>' +
+        '</g>' +
+        '<g class="zzz">' +
+          '<text x="27.5" y="10.5" font-family="JetBrains Mono, monospace" font-size="4.4" fill="currentColor">z</text>' +
+          '<text x="30.2" y="7.2"  font-family="JetBrains Mono, monospace" font-size="3.2" fill="currentColor">z</text>' +
+        '</g>' +
+      '</g>' +
+
+    '</svg>';
+  }
+
+  var POSE_CLASS = { stand: "p-stand", walk: "p-stand", sit: "p-sit", lie: "p-lie", sleep: "p-sleep" };
+  var STATE_CLASS = { stand: "st-stand", walk: "st-stand", sit: "st-sit", lie: "st-lie", sleep: "st-sleep" };
+
+  function mount(host) {
+    host.innerHTML = dogSVG();
+    var svg = host.querySelector(".dog");
+    setPose(svg, "stand");
+
+    /* Parpadeo: el párpado tapa el ojo por un instante. */
+    (function blinkLoop() {
+      setTimeout(function () {
+        if (!reduced && !svg.classList.contains("st-sleep")) {
+          svg.classList.add("blinking");
+          svg.querySelectorAll(".eye").forEach(function (e) { e.style.opacity = "0"; });
+          setTimeout(function () {
+            svg.querySelectorAll(".eye").forEach(function (e) { e.style.opacity = ""; });
+            svg.classList.remove("blinking");
+          }, 130);
+        }
+        blinkLoop();
+      }, 3000 + Math.random() * 4500);
+    })();
+
+    return svg;
+  }
+
+  function setPose(svg, state) {
+    var want = POSE_CLASS[state];
+    svg.querySelectorAll(".pose").forEach(function (g) {
+      g.classList.toggle("on", g.classList.contains(want));
+    });
+    Object.keys(STATE_CLASS).forEach(function (k) { svg.classList.remove(STATE_CLASS[k]); });
+    svg.classList.add(STATE_CLASS[state]);
+    svg.classList.toggle("walking", state === "walk");
+  }
+
+  /* ════════════════════════════════════════════════════════════════════════
+     ESCENARIO PRINCIPAL
+  ════════════════════════════════════════════════════════════════════════ */
+  var stage   = document.getElementById("stage");
+  var actor   = document.getElementById("heroActor");
+  var heroDog = mount(actor);
+  var stateEl = document.getElementById("heroState");
+
+  var NAMES = { walk: "caminando", stand: "parado", sit: "sentado", lie: "echado", sleep: "durmiendo" };
+  var heroState = "stand";
+  var heroX = 40;
+  var autoOn = true;
+  var autoTimer = null;
+
+  function heroSet(state) {
+    heroState = state;
+    setPose(heroDog, state);
+    stateEl.textContent = NAMES[state];
+    document.querySelectorAll("#fsm .node").forEach(function (n) {
+      n.classList.toggle("on", n.dataset.node === state);
+    });
+  }
+
+  function heroWalkTo(x) {
+    var span = stage.clientWidth - actor.offsetWidth;
+    x = Math.max(0, Math.min(x, span));
+    var dist = Math.abs(x - heroX);
+    actor.classList.toggle("flip", x < heroX);
+    actor.style.transitionDuration = (reduced ? 0.01 : Math.max(0.5, dist / 60)) + "s";
+    actor.style.transform = "translateX(" + x + "px)";
+    heroX = x;
+    heroSet("walk");
+    return dist / 60 * 1000;
+  }
+
+  /* El ciclo de ocio: caminar → parado → sentado → echado. */
+  function autoCycle() {
+    if (!autoOn) return;
+    var span = stage.clientWidth - actor.offsetWidth;
+    var dest = Math.random() * span;
+    var ms = heroWalkTo(dest);
+
+    autoTimer = setTimeout(function () {
+      heroSet("stand");
+      autoTimer = setTimeout(function () {
+        heroSet("sit");
+        autoTimer = setTimeout(function () {
+          heroSet("lie");
+          autoTimer = setTimeout(autoCycle, 5200);
+        }, 4200);
+      }, 3400);
+    }, reduced ? 30 : ms + 120);
+  }
+
+  function stopAuto() {
+    autoOn = false;
+    clearTimeout(autoTimer);
+    document.querySelector('[data-act="auto"]').setAttribute("aria-pressed", "false");
+  }
+
+  function heroSpeak() {
+    heroSet("stand");
+    heroDog.classList.add("speaking");
+    setTimeout(function () { heroDog.classList.remove("speaking"); }, 4200);
+  }
+
+  document.querySelectorAll("[data-act]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var a = b.dataset.act;
+      if (a === "auto") {
+        autoOn = !autoOn;
+        b.setAttribute("aria-pressed", autoOn ? "true" : "false");
+        clearTimeout(autoTimer);
+        if (autoOn) autoCycle();
+        return;
+      }
+      stopAuto();
+      if (a === "walk") {
+        var span = stage.clientWidth - actor.offsetWidth;
+        var ms = heroWalkTo(heroX > span / 2 ? 10 : span - 10);
+        setTimeout(function () { if (!autoOn) heroSet("stand"); }, reduced ? 30 : ms + 100);
+      } else if (a === "speak") {
+        heroSpeak();
+      } else {
+        heroSet(a);
+      }
+    });
+  });
+
+  /* ════════════════════════════════════════════════════════════════════════
+     POSES EN FILA
+  ════════════════════════════════════════════════════════════════════════ */
+  var POSES = [
+    { st: "stand", mood: "",        lbl: "parado",   desc: "Fresco. Acabás de volver de una pausa y él también." },
+    { st: "sit",   mood: "",        lbl: "sentado",  desc: "Tranqui. Llegó a su hueco y se acomodó a esperar." },
+    { st: "lie",   mood: "m-tired", lbl: "echado",   desc: "Frito. Dos horas sin que te levantes; él ya se rindió." },
+    { st: "sleep", mood: "m-away",  lbl: "durmiendo", desc: "No estás. Tres minutos sin teclado y se duerme." }
+  ];
+
+  var posesEl = document.getElementById("poses");
+  POSES.forEach(function (p) {
+    var card = document.createElement("div");
+    card.className = "pose-card";
+    card.innerHTML =
+      '<div class="win"><div class="gl"></div><div class="actor"></div></div>' +
+      '<div class="lbl">' + p.lbl + '</div>' +
+      '<div class="desc">' + p.desc + '</div>';
+    posesEl.appendChild(card);
+    var svg = mount(card.querySelector(".actor"));
+    setPose(svg, p.st);
+    if (p.mood) svg.classList.add(p.mood);
+  });
+
+  /* ════════════════════════════════════════════════════════════════════════
+     LA BARRA: caminar libre, parar solo en los huecos
+  ════════════════════════════════════════════════════════════════════════ */
+  var bar     = document.getElementById("bar");
+  var barWrap = document.getElementById("barDog");
+  var barDog  = mount(barWrap);
+  var zonesEl = document.getElementById("zones");
+  var bubble  = document.getElementById("barBubble");
+
+  var barX = 0;
+  var barTimer = null;
+  var patrolOn = false;
+
+  /* Los huecos salen de medir la barra real, no de coordenadas a mano. */
+  function computeZones() {
+    var br = bar.getBoundingClientRect();
+    var pad = 6;
+    var dogW = barWrap.offsetWidth;
+
+    var widgets = [];
+    bar.querySelectorAll(".bar-sec .w").forEach(function (w) {
+      var r = w.getBoundingClientRect();
+      if (r.width === 0) return;
+      widgets.push({ a: r.left - br.left - pad, b: r.right - br.left + pad });
+    });
+    widgets.sort(function (x, y) { return x.a - y.a; });
+
+    /* Fusionar widgets pegados: dos íconos juntos son un obstáculo solo. */
+    var blocks = [];
+    widgets.forEach(function (w) {
+      var last = blocks[blocks.length - 1];
+      if (last && w.a <= last.b) last.b = Math.max(last.b, w.b);
+      else blocks.push({ a: w.a, b: w.b });
+    });
+
+    var gaps = [];
+    var cursor = 2;
+    blocks.forEach(function (bl) {
+      if (bl.a - cursor >= dogW) gaps.push({ a: cursor, b: bl.a });
+      cursor = Math.max(cursor, bl.b);
+    });
+    if (bar.clientWidth - 2 - cursor >= dogW) gaps.push({ a: cursor, b: bar.clientWidth - 2 });
+
+    return { gaps: gaps, blocks: blocks };
+  }
+
+  function paintZones() {
+    var z = computeZones();
+    zonesEl.innerHTML = "";
+    z.blocks.forEach(function (b) {
+      var d = document.createElement("div");
+      d.className = "zone no";
+      d.style.left = b.a + "px";
+      d.style.width = Math.max(0, b.b - b.a) + "px";
+      zonesEl.appendChild(d);
+    });
+    z.gaps.forEach(function (g) {
+      var d = document.createElement("div");
+      d.className = "zone ok";
+      d.style.left = g.a + "px";
+      d.style.width = Math.max(0, g.b - g.a) + "px";
+      zonesEl.appendChild(d);
+    });
+  }
+
+  function barGo(settleState) {
+    var z = computeZones();
+    if (!z.gaps.length) return 0;
+
+    var dogW = barWrap.offsetWidth;
+    /* Elegir un hueco distinto al actual, y centrarse en él. */
+    var candidates = z.gaps.filter(function (g) {
+      var c = (g.a + g.b) / 2 - dogW / 2;
+      return Math.abs(c - barX) > 20;
+    });
+    var gap = (candidates.length ? candidates : z.gaps)[Math.floor(Math.random() * (candidates.length || z.gaps.length))];
+    var target = Math.max(0, Math.min((gap.a + gap.b) / 2 - dogW / 2, bar.clientWidth - dogW));
+
+    var dist = Math.abs(target - barX);
+    barWrap.classList.toggle("flip", target < barX);
+    barWrap.style.transitionDuration = (reduced ? 0.01 : Math.max(0.45, dist / 55)) + "s";
+    barWrap.style.transform = "translateX(" + target + "px)";
+    barX = target;
+    setPose(barDog, "walk");
+
+    var ms = reduced ? 30 : (dist / 55) * 1000 + 100;
+    clearTimeout(barTimer);
+    barTimer = setTimeout(function () {
+      setPose(barDog, settleState || "sit");
+    }, ms);
+    return ms;
+  }
+
+  var LINES = [
+    "Van 47 minutos clavado en herdr. ¿No te parece que podríamos parar para estirar y tomar agua... o parpadear?",
+    "47 minutos sin levantarte. Agua, ventana, dos respiraciones. Te espero.",
+    "Che, 47 minutos en herdr. Los hombros te lo van a agradecer."
+  ];
+  var lineIx = 0;
+
+  function barSpeak() {
+    setPose(barDog, "stand");
+    barDog.classList.add("speaking");
+    bubble.textContent = LINES[lineIx++ % LINES.length];
+
+    var x = Math.max(10, Math.min(barX - 16, bar.clientWidth - 210));
+    bubble.style.left = x + "px";
+    bubble.classList.add("on");
+
+    clearTimeout(bubble._t);
+    bubble._t = setTimeout(function () {
+      barDog.classList.remove("speaking");
+      bubble.classList.remove("on");
+      setPose(barDog, "sit");
+    }, 5200);
+  }
+
+  var patrolTimer = null;
+  document.querySelectorAll("[data-bar]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var a = b.dataset.bar;
+      if (a === "go") { barGo("sit"); }
+      else if (a === "speak") { barSpeak(); }
+      else if (a === "zones") {
+        var on = b.getAttribute("aria-pressed") === "true";
+        b.setAttribute("aria-pressed", on ? "false" : "true");
+        if (!on) paintZones();
+        zonesEl.classList.toggle("on", !on);
+      } else if (a === "patrol") {
+        patrolOn = !patrolOn;
+        b.setAttribute("aria-pressed", patrolOn ? "true" : "false");
+        clearInterval(patrolTimer);
+        if (patrolOn) {
+          barGo("sit");
+          patrolTimer = setInterval(function () {
+            /* Se sienta, se acuesta, y al rato se muda de hueco. */
+            setPose(barDog, "lie");
+            setTimeout(function () { if (patrolOn) barGo("sit"); }, 1800);
+          }, 7000);
+        }
+      }
+    });
+  });
+
+  /* ════════════════════════════════════════════════════════════════════════
+     ESCALA REAL
+  ════════════════════════════════════════════════════════════════════════ */
+  var SIZES = [
+    { w: 28, h: 20, cap: "20 px · real" },
+    { w: 42, h: 30, cap: "30 px" },
+    { w: 70, h: 50, cap: "50 px" },
+    { w: 126, h: 90, cap: "90 px" }
+  ];
+  var scales = document.getElementById("scales");
+  SIZES.forEach(function (s) {
+    var item = document.createElement("div");
+    item.className = "scale-item";
+    item.innerHTML = '<div class="holder"><div class="actor" style="width:' + s.w + 'px;height:' + s.h + 'px"></div></div>' +
+                     '<div class="cap">' + s.cap + '</div>';
+    scales.appendChild(item);
+    var svg = mount(item.querySelector(".actor"));
+    setPose(svg, "stand");
+  });
+
+  /* ── Arranque ─────────────────────────────────────────────────────────── */
+  requestAnimationFrame(function () {
+    actor.style.transform = "translateX(" + heroX + "px)";
+    heroSet("stand");
+    setTimeout(autoCycle, 1400);
+
+    var z = computeZones();
+    if (z.gaps.length) {
+      var g = z.gaps[z.gaps.length - 1];
+      barX = Math.max(0, (g.a + g.b) / 2 - barWrap.offsetWidth / 2);
+      barWrap.style.transition = "none";
+      barWrap.style.transform = "translateX(" + barX + "px)";
+      requestAnimationFrame(function () { barWrap.style.transition = ""; });
+    }
+    setPose(barDog, "sit");
+  });
+
+  window.addEventListener("resize", function () {
+    if (zonesEl.classList.contains("on")) paintZones();
+  });
+})();
+</script>

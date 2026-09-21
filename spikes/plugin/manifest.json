@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "leono.atomspike",
+  "name": "Atom Spike",
+  "version": "0.0.1",
+  "author": "leono",
+  "description": "Throwaway Fase 0 spike for the Atom plugin. Safe to delete.",
+  "kinds": ["service", "bar-widget"],
+  "entryPoints": {
+    "service": "Service.qml",
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Atom Spike",
+    "description": "Fase 0 probe widget",
+    "category": "Debug",
+    "defaultSection": "right",
+    "allowMultiple": false
+  }
+}

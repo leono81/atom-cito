@@ -1,0 +1,7 @@
+# Los sensores. El qmldir está para que el import de directorio resuelva los
+# tipos también fuera de un módulo instalado.
+AtomSensor 1.0 AtomSensor.qml
+ClockSensor 1.0 ClockSensor.qml
+FocusSensor 1.0 FocusSensor.qml
+IdleSensor 1.0 IdleSensor.qml
+Sensors 1.0 Sensors.qml

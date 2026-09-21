@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+"""Qué está corriendo de verdad adentro de la ventana enfocada.
+
+El título de una terminal no sirve para saber en qué estás trabajando: acá
+dice "Berserker: Projects" mientras adentro corre herdr con seis paneles y un
+agente laburando. El árbol de procesos sí lo sabe.
+
+Imprime una línea JSON: {"proc": "herdr", "agents": 2, "depth": 1}
+  proc   el TUI conocido más cercano a la terminal ("" si no hay ninguno)
+  agents cuántos procesos `claude` viven adentro
+Nunca falla: ante cualquier problema imprime {} y sale con 0, porque un
+sensor roto no puede dejar mudo a Atom.
+"""
+import json
+import os
+import subprocess
+import sys
+
+# Lo que cuenta como "en qué estoy trabajando". El orden no importa: se elige
+# por cercanía a la terminal, no por esta lista.
+KNOWN = {
+    "herdr", "nvim", "vim", "hx", "helix", "claude", "lazygit", "lazydocker",
+    "btop", "htop", "top", "tmux", "ssh", "psql", "yazi", "ranger", "gitui",
+    "k9s", "mc", "less", "man", "irssi", "weechat", "cmus", "ncmpcpp",
+}
+
+# Procesos que son andamiaje, no trabajo.
+SKIP = {"bash", "zsh", "fish", "sh", "dash", "login", "su", "sudo", "env"}
+
+
+def children_map():
+    """ppid -> [(pid, comm)], leyendo /proc directo: más barato que ps."""
+    out = {}
+    for entry in os.listdir("/proc"):
+        if not entry.isdigit():
+            continue
+        try:
+            with open("/proc/%s/stat" % entry, "rb") as fh:
+                raw = fh.read().decode("utf-8", "replace")
+            # comm puede tener espacios y paréntesis: se corta por el ÚLTIMO ')'
+            close = raw.rfind(")")
+            comm = raw[raw.find("(") + 1:close]
+            ppid = raw[close + 2:].split()[1]
+        except Exception:
+            continue
+        out.setdefault(ppid, []).append((entry, comm))
+    return out
+
+
+def focused_pid():
+    if len(sys.argv) > 1 and sys.argv[1].isdigit():
+        return sys.argv[1]
+    try:
+        raw = subprocess.run(["hyprctl", "activewindow", "-j"],
+                             capture_output=True, timeout=2).stdout
+        return str(json.loads(raw)["pid"])
+    except Exception:
+        return ""
+
+
+def main():
+    pid = focused_pid()
+    if not pid:
+        print("{}")
+        return
+
+    kids = children_map()
+    found = ""
+    agents = 0
+    depth = 0
+
+    # Recorrido por niveles: el primer TUI conocido que aparece es el más
+    # cercano a la terminal, y ése es "en qué estás". Si abrís claude adentro
+    # de herdr, seguís estando en herdr.
+    level = [pid]
+    d = 0
+    while level and d < 12:
+        nxt = []
+        for p in level:
+            for cp, comm in kids.get(p, []):
+                name = comm.split("/")[-1]
+                if name == "claude":
+                    agents += 1
+                if not found and name in KNOWN and name not in SKIP:
+                    found, depth = name, d
+                nxt.append(cp)
+        level = nxt
+        d += 1
+
+    print(json.dumps({"proc": found, "agents": agents, "depth": depth}))
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception:
+        print("{}")

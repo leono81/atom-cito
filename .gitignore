@@ -1,0 +1,13 @@
+# Capturas de las pruebas en vivo sobre la barra. Son de usar y tirar: se
+# regeneran corriendo el plugin y sacando un grim. Lo que sí se versiona es
+# el código del spike (spikes/plugin/), que es el registro de la Fase 0.
+spikes/*.png
+
+# El banco de pruebas del dibujo se mira a sí mismo por symlink. Quickshell
+# se niega a importar módulos de afuera de su carpeta de config, así que el
+# symlink es necesario para correrlo — pero versionarlo no aporta nada.
+harness/plugin
+
+# Copias de seguridad que dejan las ediciones a mano.
+*.bak
+*.bak.*
