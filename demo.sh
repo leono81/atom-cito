@@ -90,9 +90,14 @@ PY
 
 acto3() {
   banner 3 "Conoce los huecos de tu barra" "Mide los widgets en vivo. Nunca se detiene encima de ninguno."
-  $ATOM geometry 2>/dev/null | python3 - <<'PY' 2>/dev/null || true
+  # El JSON va por argv, NO por pipe: el heredoc ya ocupa stdin y le gana al
+  # pipe, así que `json.load(sys.stdin)` leería el vacío. Pasó exactamente eso
+  # la primera vez que se corrió la demo, y el `|| true` se lo tragó.
+  local geo
+  geo=$($ATOM geometry 2>/dev/null)
+  python3 - "$geo" <<'PY' 2>/dev/null || true
 import json, sys
-g = json.load(sys.stdin)
+g = json.loads(sys.argv[1])
 obs = sorted(g["obstacles"], key=lambda o: o["x"])
 pad, cur, gaps, merged = 6, 2, [], []
 for o in obs:
