@@ -11,6 +11,7 @@ import "poses/Poses.js" as Poses
 import "brain/Behavior.js" as Behavior
 import "brain/Clocks.js" as Clocks
 import "brain/Rules.js" as Rules
+import "brain/Pomodoro.js" as Pomodoro
 
 // Atom — el servicio.
 //
@@ -407,6 +408,8 @@ Item {
 
   function tick() {
     var now = Date.now()
+    // El pomodoro avanza aunque no haya barra: el tiempo no se detiene.
+    root.pomoTick(now)
     if (!root.onStage) return
 
     // R10: el hueco donde está sentado se puede invalidar solo — el reloj
@@ -418,7 +421,7 @@ Item {
     // lo lee como "estás en un mal lugar" y lo manda a pasear a los dos
     // segundos, cortando el gesto por la mitad.
     var enViaje = root.trip.length > 0 || holdTimer.running || pauseTimer.running
-    if (!enViaje && !mover.moving && !isFinite(root.pendingTarget)) {
+    if (!enViaje && !mover.moving && !isFinite(root.pendingTarget) && !root.holdingStill) {
       var g = root.barGeometry()
       if (g && !Gaps.isStillValid(mover.pos, root.dogWidth, g.obstacles)) {
         root.log("el hueco se invalidó; a buscar otro")
@@ -428,6 +431,19 @@ Item {
     }
 
     var ctx = root.context(now)
+
+    // Con el puntero encima (o eligiendo un pomodoro) se queda sentado
+    // mirándote; en foco, echado y callado. En los dos casos no pasea ni
+    // habla: la tabla de ocio no corre.
+    if (root.holdingStill || root.pomo.mode === "focus") {
+      root.pendingEvents = []
+      var still = root.pomo.mode === "focus" && !root.holdingStill
+                    ? (ctx.away ? "sleep" : "lie") : "sit"
+      if (!enViaje && !mover.moving && !root.speaking
+          && root.poseId !== still && root.hasPose(still))
+        root.poseId = still
+      return
+    }
 
     // Los eventos puntuales (un click, una vuelta al teclado) se encolan
     // cuando pasan y se consumen en el tick siguiente: el ciclo de ocio se
@@ -620,6 +636,8 @@ Item {
   }
 
   function maybeSpeak(ctx, now) {
+    // Durante un pomodoro hablan solo sus propias frases.
+    if (root.pomoActive || root.picking) return
     if (root.muted) return
     if (ctx.away) return
     if (root.speaking) return
@@ -684,7 +702,7 @@ Item {
   // Un solo globo para dos usos. Hablar le gana al hover: si Atom tiene algo
   // que decirte, no se lo tapa un dato que podés mirar cuando quieras.
   readonly property string bubbleText: root.speaking ? root.spokenText : root.hoverText
-  readonly property bool bubbleShown: root.speaking || root.hovering
+  readonly property bool bubbleShown: (root.speaking || root.hovering) && !root.picking
 
   function minutesLabel(m) {
     var n = Math.max(0, Math.floor(Number(m) || 0))
@@ -695,11 +713,15 @@ Item {
   }
 
   readonly property string hoverText: {
+    if (root.pomoActive)
+      return (root.pomo.mode === "focus" ? "foco" : "descanso") + " · faltan "
+             + Pomodoro.minutesLeftLabel(Pomodoro.remainingMs(root.pomo, root.hoverStamp))
     var s = Clocks.snapshot(root.clocks, root.hoverStamp, root.clockOpts)
     var app = s.streakApp || sensors.windowFocus.label || "nada"
     var head = root.muted ? "(mudo) " : ""
     return head + app + " · " + root.minutesLabel(s.streakMinutes)
          + "   ·   sesión " + root.minutesLabel(s.sessionMinutes)
+         + (root.muted ? "" : "\n↕ deslizá para un pomodoro")
   }
 
   // El texto del hover se recalcula al entrar, no cada segundo: es un dato
@@ -747,6 +769,241 @@ Item {
     running: true
     repeat: true
     onTriggered: root.tick()
+  }
+
+  // ═══ Pomodoro ═══════════════════════════════════════════════════════════
+  // Solo si lo pedís: arranca con el gesto sobre el perro (o por IPC) y Atom
+  // nunca lo sugiere. La lógica es pura y vive en brain/Pomodoro.js; acá se
+  // conecta con el cuerpo, el globo y el disco.
+
+  readonly property int pomodoroScrollPx: Math.max(10, Number(root.cfg("pomodoroScrollPx", 60)))
+  readonly property int pomodoroPickMs: Math.max(2, Number(root.cfg("pomodoroPickSeconds", 6))) * 1000
+
+  property var pomo: Pomodoro.create()
+  property var picker: null                 // no es null mientras elegís
+  readonly property bool picking: root.picker !== null
+  readonly property bool pomoActive: Pomodoro.isActive(root.pomo)
+  property var pomoLastLine: ({})           // para no repetir la frase anterior
+  property real askStopUntil: 0
+  property bool wagging: false
+
+  // Con el puntero encima se queda quieto: un blanco de 28 px que camina es
+  // imposible de agarrar con touchpad. Durante el foco no hace falta, ya está
+  // echado.
+  readonly property bool holdingStill: root.picking || (root.hovering && !root.pomoActive)
+
+  // El selector se dibuja en cada ventana; estas señales les llegan a todas.
+  signal pickerPoked()
+  signal pickerBumped()
+
+  function pomoBubble(text, ms) {
+    if (!text) return
+    bubbleTimer.stop()
+    root.spokenText = text
+    root.speaking = true
+    pomoBubbleTimer.interval = ms
+    pomoBubbleTimer.restart()
+    root.log("pomodoro: " + text)
+  }
+
+  function pomoSay(kind, ms) {
+    var vars = { focus: root.pomo.focus || root.pomo.last.focus,
+                 rest: root.pomo.rest || root.pomo.last.rest }
+    var l = Pomodoro.line(kind, vars, root.pomoLastLine[kind], Math.random)
+    root.pomoLastLine[kind] = l.index
+    root.pomoBubble(l.text, ms)
+  }
+
+  function pomoTick(now) {
+    var r = Pomodoro.tick(root.pomo, now)
+    if (!r.event) return
+    root.pomo = r.state
+    root.persistPomo()
+    root.lastSpokeAt = now           // las reglas esperan su ventana de silencio
+    // Si terminó con el shell apagado, anunciarlo ahora no tiene sentido.
+    if (r.lateMs > 120000) { root.log("pomodoro: " + r.event + " (tarde, en silencio)"); return }
+    root.pomoSay(r.event, r.event === "focusEnd" ? 9000 : 6000)
+  }
+
+  // Frena lo que esté haciendo y se sienta. Respeta la invariante: congela
+  // primero y recién después cambia a una pose quieta.
+  function holdStill() {
+    var moving = root.trip.length > 0 || mover.moving || isFinite(root.pendingTarget)
+    root.trip = []
+    root.currentLeg = null
+    root.pendingTarget = NaN
+    holdTimer.stop()
+    pauseTimer.stop()
+    mover.freeze()
+    if ((moving || root.canPoseMove(root.poseId)) && root.hasPose("sit")) root.poseId = "sit"
+  }
+
+  function pickStart(axis) {
+    root.picker = Pomodoro.pickerCreate(root.pomo.last, axis)
+    root.holdStill()
+    pickTimer.restart()
+    root.pickerPoked()
+  }
+
+  // `dx` y `dy` en la convención de los dedos: positivo = arriba / derecha.
+  function pickWheel(dx, dy) {
+    if (root.muted || root.pomoActive) return
+    if (!root.picking) root.pickStart(Math.abs(dx) > Math.abs(dy) ? "x" : "y")
+    var r = Pomodoro.pickerWheel(root.picker, dx, dy, Date.now(), root.pomodoroScrollPx)
+    root.picker = r.picker
+    if (r.steps !== 0) {
+      root.wagging = true
+      wagTimer.restart()
+    }
+    if (r.bumped) root.pickerBumped()
+    pickTimer.restart()
+    root.pickerPoked()
+  }
+
+  function pickConfirm() {
+    if (!root.picking) return
+    var p = root.picker
+    root.picker = null
+    pickTimer.stop()
+    root.pomo = Pomodoro.start(root.pomo, p.focus, p.rest, Date.now())
+    root.persistPomo()
+    root.log("pomodoro: foco " + p.focus + " / descanso " + p.rest)
+    root.cabriola()
+    root.pomoSay("start", 1800)
+  }
+
+  function pickCancel() {
+    if (!root.picking) return
+    root.picker = null
+    pickTimer.stop()
+    root.pomoSay("cancelPick", 2600)
+  }
+
+  function pomoStop() {
+    if (!root.pomoActive) return
+    root.pomo = Pomodoro.stop(root.pomo)
+    root.persistPomo()
+    root.askStopUntil = 0
+    root.pomoSay("cancelStop", 2800)
+  }
+
+  // Dos dedos durante un pomodoro: el primero pregunta, el segundo corta.
+  function askStop() {
+    var now = Date.now()
+    if (now < root.askStopUntil) { root.pomoStop(); return }
+    root.askStopUntil = now + 3000
+    root.pomoSay("askStop", 3000)
+  }
+
+  // Lo que manda Qt, traducido a la convención de los dedos. El touchpad trae
+  // píxeles; una rueda de mouse trae muescas de 120, y cada muesca es un paso.
+  // `inverted` es el natural scroll: se deshace para que "dedos arriba" sea
+  // siempre "más minutos".
+  property real lastWheelLogMs: 0
+  function onWheel(w) {
+    var dx, dy
+    if (w.pixelDelta.x !== 0 || w.pixelDelta.y !== 0) {
+      dx = -w.pixelDelta.x
+      dy = w.pixelDelta.y
+    } else {
+      dx = -w.angleDelta.x / 120 * root.pomodoroScrollPx
+      dy = w.angleDelta.y / 120 * root.pomodoroScrollPx
+    }
+    if (w.inverted) { dx = -dx; dy = -dy }
+
+    var now = Date.now()
+    if (now - root.lastWheelLogMs > 1000)
+      root.log("rueda: px=" + w.pixelDelta.x + "," + w.pixelDelta.y
+               + " ang=" + w.angleDelta.x + "," + w.angleDelta.y
+               + " inverted=" + w.inverted)
+    root.lastWheelLogMs = now
+    root.pickWheel(dx, dy)
+  }
+
+  function onPress(button) {
+    if (button === Qt.RightButton) {
+      if (root.picking) root.pickCancel()
+      else if (root.pomoActive) root.askStop()
+      else root.toggleMute()
+    } else if (button === Qt.MiddleButton) {
+      root.resetClocks()
+    } else {
+      if (root.picking) root.pickConfirm()
+      else if (root.pomoActive) root.cabriola()     // en foco, saltar sí; hablar no
+      else root.onDemand()
+    }
+  }
+
+  property Timer pickTimer: Timer {
+    interval: root.pomodoroPickMs
+    repeat: false
+    onTriggered: root.pickCancel()
+  }
+
+  // Al agrandarse la región de input el compositor puede mandar un salir y
+  // un entrar seguidos. Un salir solo cuenta si no volvés enseguida.
+  property Timer exitGrace: Timer {
+    interval: 400
+    repeat: false
+    onTriggered: if (!root.hovering) root.pickCancel()
+  }
+
+  property Timer pomoBubbleTimer: Timer {
+    repeat: false
+    onTriggered: root.speaking = false
+  }
+
+  property Timer wagTimer: Timer {
+    interval: 260
+    repeat: false
+    onTriggered: root.wagging = false
+  }
+
+  // ---- persistencia del pomodoro ----
+  // Archivo propio y no dentro de state.json: los relojes tienen su formato
+  // versionado y esto no tiene por qué tocarlo.
+  readonly property string pomoPath: Quickshell.env("HOME") + "/.local/state/atom/pomodoro.json"
+  property bool pomoBooted: false
+
+  property FileView pomoFile: FileView {
+    path: root.pomoPath
+    printErrors: false
+    onLoaded: root.bootPomo(pomoFile.text())
+    onLoadFailed: root.bootPomo("")
+  }
+
+  function bootPomo(raw) {
+    if (root.pomoBooted) return
+    root.pomoBooted = true
+    // Si ya arrancó uno (por IPC, antes de que el archivo cargara), manda ese.
+    if (raw && String(raw).length > 2 && !root.pomoActive) root.pomo = Pomodoro.parse(raw)
+    if (root.pomoActive)
+      root.log("pomodoro restaurado: " + root.pomo.mode + ", faltan "
+               + Pomodoro.minutesLeftLabel(Pomodoro.remainingMs(root.pomo, Date.now())))
+  }
+
+  function persistPomo() {
+    try {
+      pomoFile.setText(Pomodoro.stringify(root.pomo))
+    } catch (e) {
+      root.log("no pude guardar el pomodoro: " + e)
+    }
+  }
+
+  // El hitbox sigue al perro mientras camina, pero a 4 Hz y no por frame: lo
+  // justo para poder agarrarlo con el puntero sin reemitir la región de input
+  // sesenta veces por segundo.
+  property real hitX: 0
+  property Timer hitFollow: Timer {
+    interval: 250
+    repeat: true
+    running: mover.moving
+    onTriggered: root.hitX = mover.pos
+  }
+  Connections {
+    target: mover
+    function onPosChanged() { if (!mover.moving) root.hitX = mover.pos }
+    function onMovingChanged() { root.hitX = mover.pos }
   }
 
   // ---- ventanas ----------------------------------------------------------
@@ -802,12 +1059,23 @@ Item {
       // El hitbox NO se anima: salta a la posición de reposo recién cuando el
       // perro llega. Mientras camina no es clickeable, que es justo lo que
       // queremos — y de paso la región de input no se reemite por frame.
+      //
+      // Mientras elegís un pomodoro se agranda a perro + selector, con margen:
+      // con touchpad, correrse unos píxeles no puede cancelar la elección.
       Item {
         id: hitbox
-        x: Math.round(mover.moving ? hitbox.x : mover.pos)
-        y: root.barPosition === "bottom" ? win.height - root.barSize : 0
-        width: win.shown ? root.dogWidth : 0
-        height: win.shown ? root.barSize : 0
+        readonly property bool wide: root.picking && win.shown
+        readonly property bool barTop: root.barPosition !== "bottom"
+        readonly property real dogX: Math.round(root.hitX)
+        readonly property real edgeL: Math.min(picker.x, dogX) - 12
+        readonly property real edgeR: Math.max(picker.x + picker.width, dogX + root.dogWidth) + 12
+
+        x: wide ? edgeL : dogX
+        y: wide ? (barTop ? 0 : picker.y - 12)
+                : (root.barPosition === "bottom" ? win.height - root.barSize : 0)
+        width: wide ? edgeR - edgeL : (win.shown ? root.dogWidth : 0)
+        height: wide ? (barTop ? picker.y + picker.height + 12 : win.height - (picker.y - 12))
+                     : (win.shown ? root.barSize : 0)
       }
 
       Atom {
@@ -821,7 +1089,7 @@ Item {
 
         pose: root.poseId
         mirrored: mover.facingLeft
-        speaking: root.speaking
+        speaking: root.speaking || root.wagging
         inkColor: root.muted ? root.mutedColor : root.inkColor
         fillColor: root.fillColor
 
@@ -866,6 +1134,31 @@ Item {
              : root.barSize + 6
       }
 
+      PomodoroPicker {
+        id: picker
+
+        focusMinutes: root.picker ? root.picker.focus : root.pomo.last.focus
+        restMinutes: root.picker ? root.picker.rest : root.pomo.last.rest
+        field: root.picker ? root.picker.field : "focus"
+        expireMs: root.pomodoroPickMs
+        shown: root.picking && win.shown
+        inkColor: root.inkColor
+        fillColor: root.fillColor
+        accentColor: root.accentColor
+        fontFamily: root.fontFamily
+
+        x: Math.max(6, Math.min(atom.x - 16, win.width - width - 6))
+        y: root.barPosition === "bottom"
+             ? win.height - root.barSize - height - 6
+             : root.barSize + 6
+
+        Connections {
+          target: root
+          function onPickerPoked() { picker.restartExpiry() }
+          function onPickerBumped() { picker.bump() }
+        }
+      }
+
       MouseArea {
         anchors.fill: hitbox
         hoverEnabled: true
@@ -875,14 +1168,16 @@ Item {
         onEntered: {
           root.hoverStamp = Date.now()
           root.hovering = true
+          exitGrace.stop()
+          if (!root.pomoActive && !root.picking) root.holdStill()
         }
-        onExited: root.hovering = false
+        onExited: {
+          root.hovering = false
+          if (root.picking) exitGrace.restart()
+        }
 
-        onClicked: function (mouse) {
-          if (mouse.button === Qt.RightButton) root.toggleMute()
-          else if (mouse.button === Qt.MiddleButton) root.resetClocks()
-          else root.onDemand()
-        }
+        onClicked: function (mouse) { root.onPress(mouse.button) }
+        onWheel: function (wheel) { root.onWheel(wheel) }
       }
     }
   }
@@ -1012,6 +1307,46 @@ Item {
       return JSON.stringify(root.context(Date.now()))
     }
 
+    // `omarchy-shell atom pomodoro 50 10`. Sin números ("" "") usa los últimos.
+    function pomodoro(focus: string, rest: string): string {
+      root.picker = null
+      root.pomo = Pomodoro.start(root.pomo, focus, rest, Date.now())
+      root.persistPomo()
+      root.pomoSay("start", 1800)
+      return "foco " + root.pomo.focus + " / descanso " + root.pomo.rest
+    }
+
+    // Para un atajo de teclado: repite el último.
+    function pomodoroAgain(): string {
+      return pomodoro("", "")
+    }
+
+    function pomodoroStop(): string {
+      if (!root.pomoActive) return "no hay pomodoro"
+      root.pomoStop()
+      return "cortado"
+    }
+
+    function pomodoroStatus(): string {
+      var p = root.pomo
+      if (!Pomodoro.isActive(p)) return "off (último: " + p.last.focus + "/" + p.last.rest + ")"
+      return p.mode + " " + p.focus + "/" + p.rest + ", faltan "
+             + Pomodoro.minutesLeftLabel(Pomodoro.remainingMs(p, Date.now()))
+    }
+
+    // Para depurar sin touchpad: un evento de scroll en la convención de los
+    // dedos (positivo = arriba / derecha), y el tap que confirma.
+    function pick(dx: string, dy: string): string {
+      root.pickWheel(Number(dx) || 0, Number(dy) || 0)
+      return root.picking ? "foco " + root.picker.focus + " / descanso " + root.picker.rest
+                            + " (" + root.picker.field + ")" : "no se pudo"
+    }
+
+    function tap(): string {
+      root.onPress(Qt.LeftButton)
+      return root.picking ? "eligiendo" : (root.pomoActive ? root.pomo.mode : "off")
+    }
+
     function mute(): string {
       root.muted = !root.muted
       return root.muted ? "mudo" : "hablando"
@@ -1051,6 +1386,7 @@ Item {
       root.log("settings iniciales: " + JSON.stringify(root.settings))
 
       stateFile.reload()
+      pomoFile.reload()
     })
   }
 }

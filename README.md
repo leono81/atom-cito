@@ -69,7 +69,9 @@ defecto:
   "bubbleSeconds": 14,       // cuánto dura el globo
   "useClaude": true,         // false = solo frases locales, cero red
   "sendTitles": true,        // false = no manda el título de la ventana
-  "model": "haiku"           // modelo para las frases
+  "model": "haiku",          // modelo para las frases
+  "pomodoroScrollPx": 60,    // cuánto deslizar para sumar o restar 5 minutos
+  "pomodoroPickSeconds": 6   // sin tocar nada, la elección se cancela
 }
 ```
 
@@ -80,7 +82,32 @@ defecto:
 | click | le pedís un comentario ahora |
 | click derecho | lo silenciás / lo despertás |
 | click del medio | "volví de una pausa": reinicia los relojes |
-| hover | los dos relojes: app actual y sesión |
+| hover | los dos relojes: app actual y sesión. Mientras tanto se queda quieto |
+
+### Pomodoro
+
+Solo si lo pedís: Atom nunca lo propone ni lo arranca solo.
+
+| Gesto sobre el perro | Qué hace |
+|---|---|
+| scroll vertical (dos dedos) | elige los minutos de foco: 25 a 90, de a 5 |
+| scroll horizontal | elige el descanso: 5 a 20 |
+| tap / click | arranca. La próxima vez, el selector empieza desde estos valores |
+| tap con dos dedos / click derecho | cancela la elección; durante un pomodoro, dos seguidos lo cortan |
+| hover durante el pomodoro | cuánto falta |
+
+En el foco se echa y no habla; al terminar te avisa y en el descanso pasea.
+También por IPC, por ejemplo para un atajo de Hyprland:
+
+```bash
+omarchy-shell atom pomodoro 50 10   # foco 50, descanso 10
+omarchy-shell atom pomodoroAgain    # repite el último
+omarchy-shell atom pomodoroStop
+omarchy-shell atom pomodoroStatus
+```
+
+El prototipo con el que se diseñó el gesto está en
+[docs/pomodoro.html](docs/pomodoro.html).
 
 ## La demo
 
