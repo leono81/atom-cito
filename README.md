@@ -30,7 +30,7 @@ Nada más. Ver [privacidad](MANIFIESTO.md#7-privacidad).
 Requiere Omarchy 4.x (con `omarchy-shell`) y, opcionalmente, el CLI `claude`.
 
 ```bash
-git clone <repo> ~/Projects/atom
+git clone https://github.com/leono81/atom-cito ~/Projects/atom
 ln -s ~/Projects/atom/plugin ~/.config/omarchy/plugins/leono.atom
 omarchy-shell shell rescanPlugins
 ```
