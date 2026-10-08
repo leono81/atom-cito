@@ -280,6 +280,8 @@ stateDiagram-v2
 - **El estado se guarda** en `~/.local/state/atom/pomodoro.json`, así que un
   reinicio del shell no corta el foco. Si las dos etapas terminaron con el
   shell apagado, pasa a `off` sin anunciar nada.
+- **Ladra** al arrancar (`bark-ok`), dos veces al terminar el foco y una al
+  terminar el descanso (`bark-alert`), con `pw-play`. En mudo, no.
 - **Las frases son fijas** y viven en `Pomodoro.js`: la cancelación pasa en el
   momento y no da tiempo a pedirle nada a Claude.
 - **Con el puntero encima se queda quieto**, incluso a mitad de un paseo: un

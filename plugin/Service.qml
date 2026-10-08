@@ -786,6 +786,9 @@ Item {
   readonly property int pomodoroScrollPx: Math.max(10, Number(root.cfg("pomodoroScrollPx", 60)))
   readonly property int pomodoroPickMs: Math.max(2, Number(root.cfg("pomodoroPickSeconds", 6))) * 1000
 
+  readonly property bool pomodoroSound: root.cfg("pomodoroSound", true) === true
+  readonly property real pomodoroVolume: Math.max(0, Math.min(1.5, Number(root.cfg("pomodoroVolume", 0.6))))
+
   property var pomo: Pomodoro.create()
   property var picker: null                 // no es null mientras elegís
   readonly property bool picking: root.picker !== null
@@ -822,6 +825,43 @@ Item {
     root.pomoBubble(l.text, ms)
   }
 
+  // ---- el ladrido ----
+  // Solo en el pomodoro, que existe porque lo pediste: las frases de siempre
+  // siguen en silencio (MANIFIESTO, principio 2). Mudo también calla esto.
+  // Los sonidos son CC-BY 4.0; los créditos están en sounds/CREDITOS.md.
+  property var barkQueue: []
+
+  function bark(kind, times) {
+    if (!root.pomodoroSound || root.muted) return
+    var path = root.pluginDir + "/sounds/bark-" + kind + ".ogg"
+    var q = root.barkQueue
+    for (var i = 0; i < (times || 1); i++) q.push(path)
+    root.barkQueue = q
+    if (!barkProc.running) root.nextBark()
+  }
+
+  function nextBark() {
+    var q = root.barkQueue
+    if (q.length === 0) return
+    var path = q.shift()
+    root.barkQueue = q
+    // pw-play viene con PipeWire, que es lo que trae Omarchy; paplay de red.
+    barkProc.command = ["sh", "-c", "pw-play --volume \"$1\" \"$2\" 2>/dev/null || paplay \"$2\"",
+                        "atom-bark", String(root.pomodoroVolume), path]
+    barkProc.running = true
+  }
+
+  property Process barkProc: Process {
+    onExited: barkGap.restart()
+  }
+
+  // Entre ladrido y ladrido, un respiro: si no suenan como uno solo largo.
+  property Timer barkGap: Timer {
+    interval: 140
+    repeat: false
+    onTriggered: root.nextBark()
+  }
+
   function pomoTick(now) {
     var r = Pomodoro.tick(root.pomo, now)
     if (!r.event) return
@@ -831,6 +871,7 @@ Item {
     // Si terminó con el shell apagado, anunciarlo ahora no tiene sentido.
     if (r.lateMs > 120000) { root.log("pomodoro: " + r.event + " (tarde, en silencio)"); return }
     root.pomoSay(r.event, r.event === "focusEnd" ? 9000 : 6000)
+    root.bark("alert", r.event === "focusEnd" ? 2 : 1)
   }
 
   // Frena lo que esté haciendo y se sienta. Respeta la invariante: congela
@@ -881,6 +922,7 @@ Item {
     root.log("pomodoro: foco " + p.focus + " / descanso " + p.rest)
     root.cabriola()
     root.pomoSay("start", 1800)
+    root.bark("ok", 1)
   }
 
   function pickCancel() {
@@ -922,12 +964,13 @@ Item {
     }
     if (w.inverted) { dx = -dx; dy = -dy }
 
+    // Para diagnosticar signos: el primer evento con movimiento de cada gesto.
     var now = Date.now()
-    if (now - root.lastWheelLogMs > 1000)
+    if ((dx !== 0 || dy !== 0) && now - root.lastWheelLogMs > 1000)
       root.log("rueda: px=" + w.pixelDelta.x + "," + w.pixelDelta.y
                + " ang=" + w.angleDelta.x + "," + w.angleDelta.y
                + " inverted=" + w.inverted)
-    root.lastWheelLogMs = now
+    if (dx !== 0 || dy !== 0) root.lastWheelLogMs = now
     root.pickWheel(dx, dy)
   }
 
@@ -1324,12 +1367,19 @@ Item {
       root.pomo = Pomodoro.start(root.pomo, focus, rest, Date.now())
       root.persistPomo()
       root.pomoSay("start", 1800)
+      root.bark("ok", 1)
       return "foco " + root.pomo.focus + " / descanso " + root.pomo.rest
     }
 
     // Para un atajo de teclado: repite el último.
     function pomodoroAgain(): string {
       return pomodoro("", "")
+    }
+
+    function bark(kind: string): string {
+      var k = kind === "alert" ? "alert" : "ok"
+      root.bark(k, 1)
+      return root.muted ? "mudo: no ladra" : (root.pomodoroSound ? "guau (" + k + ")" : "sonido apagado")
     }
 
     function pomodoroStop(): string {

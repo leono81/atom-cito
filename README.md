@@ -71,7 +71,9 @@ defecto:
   "sendTitles": true,        // false = no manda el título de la ventana
   "model": "haiku",          // modelo para las frases
   "pomodoroScrollPx": 60,    // cuánto deslizar para sumar o restar 5 minutos
-  "pomodoroPickSeconds": 6   // sin tocar nada, la elección se cancela
+  "pomodoroPickSeconds": 6,  // sin tocar nada, la elección se cancela
+  "pomodoroSound": true,     // ladrar en los avisos del pomodoro
+  "pomodoroVolume": 0.6      // volumen del ladrido, de 0 a 1
 }
 ```
 
@@ -97,6 +99,9 @@ Solo si lo pedís: Atom nunca lo propone ni lo arranca solo.
 | hover durante el pomodoro | cuánto falta |
 
 En el foco se echa y no habla; al terminar te avisa y en el descanso pasea.
+Ladra una vez al arrancar, dos al terminar el foco y una al terminar el
+descanso; nunca fuera del pomodoro, y en mudo no ladra. Los ladridos son
+CC-BY 4.0: créditos en [plugin/sounds/CREDITOS.md](plugin/sounds/CREDITOS.md).
 También por IPC, por ejemplo para un atajo de Hyprland:
 
 ```bash
