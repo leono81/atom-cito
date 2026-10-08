@@ -70,6 +70,7 @@ instalar_tag() {
   # a medias. Con punto adelante el shell no la toma por un plugin.
   local tmp
   tmp=$(mktemp -d "$PLUGINS/.leono.atom.XXXXXX")
+  chmod 755 "$tmp"   # mktemp la crea 700; los demás plugins son 755
   trap 'rm -rf "$tmp"' EXIT
   git -C "$REPO" archive "$tag" plugin | tar -x -C "$tmp" --strip-components=1
   printf '%s · %s · instalado %s\n' "$tag" "${commit:0:7}" "$(date '+%F %R')" \
