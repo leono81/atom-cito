@@ -403,11 +403,25 @@ De ahí el presupuesto:
 
 ### La latencia de `claude -p` obliga a anticipar
 
-Medido con el prompt real de Atom y **haiku**: 12 a 81 segundos, mediana ~27.
-Con **`claude-sonnet-5`**, que es el modelo que quedó por defecto: **4 a 12
-segundos** en cuatro muestras. El modelo chico resultó ser el lento, lo que
-sugiere que aquello fue una ventana mala del servicio y no el tamaño del
-prompt.
+El modelo por defecto es **haiku**: para una frase de 140 caracteres es el
+que corresponde por costo, y en condiciones normales debería ser el más
+rápido.
+
+Las mediciones con el prompt real no lo confirmaron todavía:
+
+- Septiembre: haiku 12 a 81 s (mediana ~27); `claude-sonnet-5` 4 a 12 s. Se
+  sospechó una mala ventana del servicio.
+- 2026-10-08, alternando modelos, con problemas de red: haiku mediana ~52 s
+  (uno pasó los 90 s); sonnet mediana ~15 s.
+
+Por eso el timeout que le pone `Service.qml` a `atom-say` es de **90 s**:
+la frase se pide 3 minutos antes de hacer falta, así que esperar no se nota.
+La excepción es el click, que pide en el momento: la cabriola sale al
+instante y el globo cuando llegue la frase.
+
+Pendiente: medir de nuevo con la red sana. Si haiku sigue pasando los 90 s,
+casi todo saldría del banco local; ahí conviene volver a sonnet desde
+`shell.json` (`"model": "claude-sonnet-5"`).
 
 Igual la anticipación se queda: 12 segundos de globo en blanco también son
 demasiados, y no cuesta nada tenerla.

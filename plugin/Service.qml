@@ -602,7 +602,10 @@ Item {
     scriptPath: root.pluginDir + "/voice/atom-say"
     useClaude: root.cfg("useClaude", true) === true
     sendTitles: root.cfg("sendTitles", true) === true
-    timeoutSeconds: 45
+    model: String(root.cfg("model", "haiku"))
+    // Holgado a propósito: la frase se pide prefetchMinutes antes de hacer
+    // falta, así que esperar no se nota. Cortar antes la manda al banco local.
+    timeoutSeconds: 90
 
     onSaid: function (ruleId, text, source) {
       // Si era un pedido anticipado, se guarda y nadie se entera todavía.
