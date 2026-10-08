@@ -127,6 +127,10 @@ archivo nuevo y una línea de registro**.
 Las cinco recetas completas (reglas, poses, sensores, voces, comportamiento)
 están en [docs/EXTENDER.md](docs/EXTENDER.md).
 
+Para entender cómo encaja todo antes de tocar nada:
+[docs/DIAGRAMAS.md](docs/DIAGRAMAS.md) tiene los estados del perro, la
+secuencia de cómo decide hablar, los componentes y el despliegue.
+
 ## Desarrollo
 
 Para trabajar sobre el código vivo, `./deploy.sh dev` cambia la copia fija
