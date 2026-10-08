@@ -631,6 +631,12 @@ Item {
         root.log("frase lista por adelantado (" + ruleId + ", " + source + ")")
         return
       }
+      // Pedida antes de arrancar un pomodoro y llegada durante: se descarta.
+      // En el foco no habla, y pararlo para esto rompería eso.
+      if (root.pomoActive || root.picking) {
+        root.log("frase descartada, hay un pomodoro: " + text)
+        return
+      }
       root.show(ruleId, text, source)
     }
   }
@@ -687,6 +693,7 @@ Item {
   }
 
   function show(ruleId, text, source) {
+    pomoBubbleTimer.stop()
     root.spokenText = text
     root.speaking = true
     root.poseId = root.restPose      // hablar lo pone de pie
@@ -788,9 +795,10 @@ Item {
   property bool wagging: false
 
   // Con el puntero encima se queda quieto: un blanco de 28 px que camina es
-  // imposible de agarrar con touchpad. Durante el foco no hace falta, ya está
-  // echado.
-  readonly property bool holdingStill: root.picking || (root.hovering && !root.pomoActive)
+  // imposible de agarrar con touchpad. Vale también en el descanso, que es
+  // cuando más falta hace: cortarlo son dos taps seguidos. Durante el foco no
+  // hace falta, ya está echado.
+  readonly property bool holdingStill: root.picking || (root.hovering && root.pomo.mode !== "focus")
 
   // El selector se dibuja en cada ventana; estas señales les llegan a todas.
   signal pickerPoked()
@@ -847,6 +855,9 @@ Item {
 
   // `dx` y `dy` en la convención de los dedos: positivo = arriba / derecha.
   function pickWheel(dx, dy) {
+    // Qt manda un evento vacío al levantar los dedos. Contarlo reabriría el
+    // selector recién cancelado o reiniciaría el eje del gesto.
+    if (dx === 0 && dy === 0) return
     if (root.muted || root.pomoActive) return
     if (!root.picking) root.pickStart(Math.abs(dx) > Math.abs(dy) ? "x" : "y")
     var r = Pomodoro.pickerWheel(root.picker, dx, dy, Date.now(), root.pomodoroScrollPx)
@@ -1169,7 +1180,7 @@ Item {
           root.hoverStamp = Date.now()
           root.hovering = true
           exitGrace.stop()
-          if (!root.pomoActive && !root.picking) root.holdStill()
+          if (root.pomo.mode !== "focus" && !root.picking) root.holdStill()
         }
         onExited: {
           root.hovering = false
