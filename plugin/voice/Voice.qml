@@ -19,6 +19,7 @@ Item {
   property string scriptPath: ""
   property bool useClaude: true
   property bool sendTitles: true
+  property string model: ""          // vacío: el que trae atom-say
   property int timeoutSeconds: 45
 
   // (ruleId, texto, origen) — origen es "claude" o "local".
@@ -57,8 +58,10 @@ Item {
     // El título es lo más sensible que sale de la máquina, y se puede apagar.
     if (root.sendTitles) payload.title = String(ctx.title || "")
 
-    proc.command = [root.scriptPath, "--timeout", String(root.timeoutSeconds),
-                    JSON.stringify(payload)]
+    var cmd = [root.scriptPath, "--timeout", String(root.timeoutSeconds)]
+    if (root.model !== "") cmd.push("--model", root.model)
+    cmd.push(JSON.stringify(payload))
+    proc.command = cmd
     proc.running = true
     return true
   }

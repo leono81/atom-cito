@@ -602,6 +602,7 @@ Item {
     scriptPath: root.pluginDir + "/voice/atom-say"
     useClaude: root.cfg("useClaude", true) === true
     sendTitles: root.cfg("sendTitles", true) === true
+    model: String(root.cfg("model", "haiku"))
     timeoutSeconds: 45
 
     onSaid: function (ruleId, text, source) {

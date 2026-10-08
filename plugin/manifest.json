@@ -27,7 +27,7 @@
       "bubbleSeconds": 14,
       "useClaude": true,
       "sendTitles": true,
-      "model": "claude-sonnet-5"
+      "model": "haiku"
     },
     "schema": [
       { "key": "stretchMinutes", "type": "number", "label": "Minutos para sugerir pausa", "description": "Minutos seguidos en la misma app antes de que sugiera estirarse.", "defaultValue": 45 },

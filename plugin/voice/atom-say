@@ -32,7 +32,7 @@ CLAUDE_TIMEOUT = 30        # Medido en esta maquina sobre 9 llamadas reales con
                            # latencia de un prompt trivial; con la personalidad
                            # puesta, no). 30 s cubre la mayoria y el que se pasa
                            # cae al banco local, que es exactamente el plan B.
-MODEL = "claude-sonnet-5"
+MODEL = "haiku"
 
 # Nada de esto hace falta para escribir una frase de 140 caracteres, y cada
 # herramienta habilitada es una forma de que la llamada tarde mas o haga algo
