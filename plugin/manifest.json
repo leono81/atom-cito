@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "leono.atom",
   "name": "Atom",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "author": "leono",
   "license": "MIT",
   "description": "Un perro que vive en la barra, sabe en que estas trabajando y hace cuanto, y te habla cuando conviene parar. Camina entre los huecos que dejan los widgets, se sienta cuando llega y se acuesta si lo dejas tranquilo.",
