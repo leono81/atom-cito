@@ -27,12 +27,13 @@ Consecuencias que condicionan todo el diseño:
 
 - **Corremos sin sandbox en el proceso del shell.** Un loop infinito nuestro
   cuelga la barra del usuario. Nada de trabajo pesado en el hilo de QML.
-- **El shell recarga código en caliente** al guardar cualquier archivo bajo
-  `~/.config/omarchy/plugins/`. Eso implica que un servicio puede ser
-  destruido y recreado en cualquier momento: el estado que importa se
-  persiste (ver §6).
-- **No usamos `keepLoaded: true`.** Evita la recarga en caliente del servicio,
-  que es justo lo que hace tolerable desarrollar esto.
+- **El shell puede destruir y recrear el servicio en cualquier momento**
+  (`rescanPlugins`, un cambio en `shell.json`, `omarchy restart shell`), así
+  que el estado que importa se persiste (ver §6). Lo que *no* hace es recoger
+  código nuevo en caliente: para eso hace falta `omarchy restart shell`
+  (ver [EXTENDER.md](EXTENDER.md#0-el-ciclo-de-trabajo)).
+- **No usamos `keepLoaded: true`.** Dejamos que el shell recree el servicio
+  como a cualquier otro plugin.
 
 ## 2. Por qué `service` y no `panel`
 
@@ -129,6 +130,9 @@ el layout de las ventanas.
 
 Cinco piezas, cinco responsabilidades, cinco puntos de extensión. Cada una se
 amplía sin tocar a las otras.
+
+La versión detallada de este esquema, y la secuencia de cómo llega una frase
+al globo, están en [DIAGRAMAS.md](DIAGRAMAS.md).
 
 ### Contexto
 
@@ -256,24 +260,31 @@ hecho estructura.
 Una tabla declarativa, no una cascada de `if`:
 
 ```js
-// brain/Behavior.js
+// brain/Behavior.js (resumida: la tabla real tiene sus comentarios)
 var IDLE = [
   // Las interrupciones van PRIMERO: gana la primera fila que aplica, y si
   // "speaking" quedara abajo, un perro sentado hace 14 s se acostaría justo
   // en el momento en que tiene algo que decirte.
-  { from: "*",     to: "stand", when: "speaking" },
-  { from: "*",     to: "stand", when: "back" },
-  { from: "*",     to: "stand", when: "click" },
-
-  { from: "walk",  to: "stand", when: "arrived" },
-  { from: "stand", to: "sit",   afterMs: 6000 },
-  { from: "sit",   to: "lie",   afterMs: 14000 },
-  { from: "lie",   to: "sleep", when: "away" }
+  { from: "*",       to: "stand",   when: "speaking" },
+  { from: "*",       to: "play",    when: "back" },
+  { from: "play",    to: "stand",   afterMs: 2600 },
+  { from: "*",       to: "stand",   when: "back" },
+  { from: "walk",    to: "stand",   when: "arrived" },
+  { from: "stand",   to: "sit",     afterMs: 6000 },
+  { from: "sit",     to: "lie",     afterMs: 14000 },
+  { from: "sit",     to: "scratch", afterMs: 9000, chance: 0.35 },
+  { from: "scratch", to: "sit",     afterMs: 1600 },
+  { from: "lie",     to: "sleep",   when: "away" },
+  { from: "lie",     to: "walk",    afterMs: 600000 }
 ]
 ```
 
-Agregar "si está echado y pasan 10 minutos, que se levante a caminar" es
-agregar una fila.
+El click no está en la tabla: tiene que responder al instante, y la tabla se
+evalúa una vez por segundo. Lo maneja el servicio (cabriola y pedir frase).
+
+"Si está echado y pasan 10 minutos, que se levante a caminar" fue
+exactamente eso: agregar la última fila. El diagrama de estados está en
+[DIAGRAMAS.md](DIAGRAMAS.md#1-estados-qué-pose-cuándo).
 
 ## 5. La invariante de movimiento
 
@@ -304,7 +315,7 @@ no se compensa después.
 | Estado | Dónde vive | Sobrevive a |
 |---|---|---|
 | pose actual, `x` | en memoria | nada (se recalcula) |
-| relojes (`streak`, `session`) | `~/.local/state/atom/state.json` | recarga en caliente y reinicio del shell |
+| relojes (`streak`, `session`) | `~/.local/state/atom/state.json` | que el shell recree el servicio, y su reinicio |
 | últimas frases dichas | `~/.local/state/atom/history.jsonl` | todo |
 | ajustes del usuario | `~/.config/omarchy/shell.json`, entrada del widget en `bar.layout` | todo |
 
@@ -325,10 +336,11 @@ Un servicio de terceros **no puede** leer `plugins[]`: su fachada no expone
 `shellConfig` (ver §2). Cualquier código que haga `shell.shellConfig` está
 leyendo `undefined` en silencio.
 
-Los relojes se persisten **porque el shell recarga el servicio al guardar
-cualquier archivo** — y recarga *todos* los servicios de terceros, no solo el
-que tocaste: sin eso, tocar una coma durante el desarrollo reiniciaría
-los contadores, y en uso normal un `omarchy update` te borraría la sesión.
+Los relojes se persisten **porque el shell recrea el servicio seguido**
+(`rescanPlugins`, un cambio de ajustes, `omarchy restart shell`) — y recrea
+*todos* los servicios de terceros, no solo el tuyo: sin eso, cada reinicio
+durante el desarrollo pondría los contadores en cero, y en uso normal un
+`omarchy update` te borraría la sesión.
 
 Se escribe con throttle (a lo sumo una vez por minuto) para no castigar el
 disco.

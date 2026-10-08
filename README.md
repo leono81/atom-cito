@@ -49,7 +49,8 @@ Después, habilitarlo agregando su entrada en `~/.config/omarchy/shell.json`:
 }
 ```
 
-Guardar recarga en caliente: no hace falta reiniciar el shell.
+Los cambios en `shell.json` se aplican al guardar, sin reiniciar el shell.
+(El código del plugin es otra cosa: ver [Desarrollo](#desarrollo).)
 
 ## Configuración
 
@@ -126,6 +127,10 @@ archivo nuevo y una línea de registro**.
 
 Las cinco recetas completas (reglas, poses, sensores, voces, comportamiento)
 están en [docs/EXTENDER.md](docs/EXTENDER.md).
+
+Para entender cómo encaja todo antes de tocar nada:
+[docs/DIAGRAMAS.md](docs/DIAGRAMAS.md) tiene los estados del perro, la
+secuencia de cómo decide hablar, los componentes y el despliegue.
 
 ## Desarrollo
 
