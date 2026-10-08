@@ -31,9 +31,13 @@ Requiere Omarchy 4.x (con `omarchy-shell`) y, opcionalmente, el CLI `claude`.
 
 ```bash
 git clone https://github.com/leono81/atom-cito ~/Projects/atom
-ln -s ~/Projects/atom/plugin ~/.config/omarchy/plugins/leono.atom
-omarchy-shell shell rescanPlugins
+cd ~/Projects/atom
+./deploy.sh v0.1.0
 ```
+
+`deploy.sh` copia esa versión a `~/.config/omarchy/plugins/leono.atom` y
+reinicia el shell. Para actualizar o volver atrás, `./deploy.sh <otro tag>`;
+`./deploy.sh` a secas dice qué versión está corriendo.
 
 Después, habilitarlo agregando su entrada en `~/.config/omarchy/shell.json`:
 
@@ -125,13 +129,28 @@ están en [docs/EXTENDER.md](docs/EXTENDER.md).
 
 ## Desarrollo
 
-El código vive en este repo; `~/.config/omarchy/plugins/leono.atom` es un
-symlink. Guardar cualquier archivo recarga el plugin en caliente.
+Para trabajar sobre el código vivo, `./deploy.sh dev` cambia la copia fija
+por un symlink al repo. No hay recarga en caliente (el porqué está en
+[docs/EXTENDER.md](docs/EXTENDER.md#0-el-ciclo-de-trabajo)): cada cambio se
+recoge con
 
 ```bash
-omarchy-shell shell rescanPlugins    # forzar recarga
+omarchy restart shell
 journalctl --user -f | grep -i atom  # ver los logs
+plugin/tests/run.sh                  # la lógica pura, con node
 ```
+
+### Versiones
+
+`main` está siempre estable; lo nuevo entra por rama y PR. Para publicar una
+versión: subir `version` en `plugin/manifest.json`, commitear, y
+
+```bash
+git tag -a v0.2.0 -m "..." && git push --follow-tags
+./deploy.sh v0.2.0
+```
+
+`deploy.sh` se niega a instalar un tag que no coincide con el manifest.
 
 Las reglas son JavaScript puro sin imports de QML, así que se testean con
 `node` sin levantar el shell.

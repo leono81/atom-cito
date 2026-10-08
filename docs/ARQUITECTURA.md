@@ -10,8 +10,8 @@ documento explica el porqué de las formas que ese otro te pide seguir.
 
 Todo vive dentro del proceso `omarchy-shell`, un único Quickshell de larga
 vida que hostea la barra, las notificaciones y los paneles. Atom es un
-plugin de terceros en `~/.config/omarchy/plugins/leono.atom/` (symlink al
-repo).
+plugin de terceros en `~/.config/omarchy/plugins/leono.atom/`: una copia
+de un tag, o un symlink al repo en modo dev (ver `deploy.sh`).
 
 ```
 omarchy-shell (un proceso)

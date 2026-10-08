@@ -1,0 +1,2 @@
+# Los tests no viajan con la copia instalada: deploy.sh usa git archive.
+plugin/tests export-ignore
