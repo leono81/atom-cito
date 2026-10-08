@@ -27,11 +27,9 @@ import time
 MAX_CHARS = 140            # una linea de globo; mas que esto no se lee de reojo
 HISTORY_KEEP = 6           # cuantas frases previas se mandan como "no repitas"
 HISTORY_MAX_LINES = 200    # cuanto se deja crecer el archivo
-CLAUDE_TIMEOUT = 30        # Medido en esta maquina sobre 9 llamadas reales con
-                           # este prompt: 12 a 41 s (el "3 a 5 s" del plan es la
-                           # latencia de un prompt trivial; con la personalidad
-                           # puesta, no). 30 s cubre la mayoria y el que se pasa
-                           # cae al banco local, que es exactamente el plan B.
+CLAUDE_TIMEOUT = 30        # Sin thinking (ver call_claude) tarda ~4 s, casi
+                           # todo el arranque del CLI. Voice.qml le pasa 90:
+                           # la frase se pide con minutos de anticipacion.
 MODEL = "haiku"
 
 # Nada de esto hace falta para escribir una frase de 140 caracteres, y cada
@@ -233,9 +231,15 @@ def call_claude(prompt, model, timeout_s):
         "--strict-mcp-config",          # sin servidores MCP del usuario colgados
         "--disallowedTools", DISALLOWED,
     ]
+    # Sin esto, Claude Code piensa antes de contestar: haiku escribia 3000 a
+    # 6000 tokens de razonamiento oculto para una frase de 140 caracteres, y
+    # tardaba 16 a 50 s en vez de 4. Una frase corta no necesita pensarse.
+    # Pisa cualquier MAX_THINKING_TOKENS del usuario, a proposito.
+    env = dict(os.environ, MAX_THINKING_TOKENS="0")
     try:
         proc = subprocess.run(
             cmd,
+            env=env,
             input=prompt.encode("utf-8"),   # el prompt va por stdin: asi ninguna
                                             # opcion variadica se lo come
             stdout=subprocess.PIPE,

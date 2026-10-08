@@ -10,8 +10,9 @@ import "../brain/Rules.js" as Rules
 // con el mismo cuidado que el prompt, y con `useClaude: false` Atom sigue
 // siendo un producto entero.
 //
-// Todo es asincrónico por obligación, no por elegancia: medido, `claude -p`
-// con nuestro prompt tarda entre 12 y 81 segundos.
+// Todo es asincrónico por obligación, no por elegancia: aun sin thinking,
+// `claude -p` tarda unos 4 segundos, y un hilo de QML bloqueado es la barra
+// congelada.
 Item {
   id: root
   visible: false

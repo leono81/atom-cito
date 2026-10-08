@@ -11,3 +11,6 @@ harness/plugin
 # Copias de seguridad que dejan las ediciones a mano.
 *.bak
 *.bak.*
+
+# Lo que deja python al importar los scripts para probarlos.
+__pycache__/
