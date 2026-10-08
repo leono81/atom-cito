@@ -1,0 +1,28 @@
+# Lo que se puede verificar sin una barra: la lógica pura del cerebro (con
+# node pelado, como en local) y que los scripts al menos parseen. Lo visual
+# se sigue mirando con harness/ y ./demo.sh.
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Cerebro (plugin/tests)
+        run: plugin/tests/run.sh
+
+      - name: Los scripts parsean
+        run: |
+          for f in deploy.sh demo.sh plugin/tests/run.sh; do bash -n "$f"; done
+          python3 -c 'import ast, sys; [ast.parse(open(f).read(), f) for f in sys.argv[1:]]' \
+            plugin/voice/atom-say plugin/sensors/focus-probe harness/compare-prototype.py
