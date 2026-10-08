@@ -49,7 +49,8 @@ Después, habilitarlo agregando su entrada en `~/.config/omarchy/shell.json`:
 }
 ```
 
-Guardar recarga en caliente: no hace falta reiniciar el shell.
+Los cambios en `shell.json` se aplican al guardar, sin reiniciar el shell.
+(El código del plugin es otra cosa: ver [Desarrollo](#desarrollo).)
 
 ## Configuración
 

@@ -315,7 +315,7 @@ no se compensa después.
 | Estado | Dónde vive | Sobrevive a |
 |---|---|---|
 | pose actual, `x` | en memoria | nada (se recalcula) |
-| relojes (`streak`, `session`) | `~/.local/state/atom/state.json` | recarga en caliente y reinicio del shell |
+| relojes (`streak`, `session`) | `~/.local/state/atom/state.json` | que el shell recree el servicio, y su reinicio |
 | últimas frases dichas | `~/.local/state/atom/history.jsonl` | todo |
 | ajustes del usuario | `~/.config/omarchy/shell.json`, entrada del widget en `bar.layout` | todo |
 
@@ -336,10 +336,11 @@ Un servicio de terceros **no puede** leer `plugins[]`: su fachada no expone
 `shellConfig` (ver §2). Cualquier código que haga `shell.shellConfig` está
 leyendo `undefined` en silencio.
 
-Los relojes se persisten **porque el shell recarga el servicio al guardar
-cualquier archivo** — y recarga *todos* los servicios de terceros, no solo el
-que tocaste: sin eso, tocar una coma durante el desarrollo reiniciaría
-los contadores, y en uso normal un `omarchy update` te borraría la sesión.
+Los relojes se persisten **porque el shell recrea el servicio seguido**
+(`rescanPlugins`, un cambio de ajustes, `omarchy restart shell`) — y recrea
+*todos* los servicios de terceros, no solo el tuyo: sin eso, cada reinicio
+durante el desarrollo pondría los contadores en cero, y en uso normal un
+`omarchy update` te borraría la sesión.
 
 Se escribe con throttle (a lo sumo una vez por minuto) para no castigar el
 disco.

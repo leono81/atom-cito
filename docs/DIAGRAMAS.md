@@ -31,9 +31,9 @@ stateDiagram-v2
     sleep --> play : volviste
     play --> stand : 2.6 s
 
-    lie --> walk : 10 min aburrido
+    lie --> walk : 10 min aburrido, 3 de cada 4
+    lie --> pee : 10 min aburrido, 1 de cada 4
     walk --> stand : llegó al hueco
-    walk --> pee : 1 de cada 4 paseos
     pee --> stand : 4.2 s y vuelve
 
     stand --> jump : click
@@ -56,7 +56,12 @@ Detalles que el dibujo simplifica:
 
 - **El click no está en la tabla.** Tiene que responder al instante y la
   tabla corre una vez por segundo, así que lo maneja `Service.onDemand()`: la
-  cabriola sale desde cualquier pose, y además pide una frase.
+  cabriola sale desde cualquier pose y además pide una frase. Dos
+  excepciones: si está mudo, el click solo lo despierta (ni salto ni frase);
+  si ya está hablando, salta pero no pide otra.
+- **El pis reemplaza al paseo, no lo sigue.** Cuando la tabla pide `walk`,
+  una de cada cuatro veces `Service` intenta `goPee()` en su lugar, y si no
+  hay dónde, pasea.
 - **`walk` es un viaje, no una pose suelta.** `Trips.js` arma los tramos
   (mudarse de hueco, punta a punta, la vuelta por el borde, la ronda, la
   corrida) y `Service.runNextLeg()` los ejecuta. Al terminar el último tramo
@@ -113,9 +118,10 @@ sequenceDiagram
 
 Lo que no se ve en el dibujo:
 
-- **Antes de `pick` hay tres filtros**: si está mudo, si estás lejos del
-  teclado, o si habló hace menos de `quietMinutes` (20), no habla. En el
-  último caso igual aprovecha para anticipar.
+- **Antes de `pick` hay cuatro filtros**: si está mudo, si estás lejos del
+  teclado, si el globo todavía está abierto, o si habló hace menos de
+  `quietMinutes` (20), no habla. En el último caso igual aprovecha para
+  anticipar.
 - **Si la frase no estaba lista** cuando la regla dispara, se pide en el
   momento y el globo sale cuando llegue. Es el mismo camino que sigue el click
   (regla `ondemand`).
