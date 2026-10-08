@@ -10,6 +10,7 @@ lo que muestra un diagrama, se actualiza en el mismo PR.
 | [Secuencia](#2-secuencia-cómo-decide-hablar) | ¿cómo llega una frase al globo? | `Service.qml` (`maybeSpeak`, `maybePrefetch`), `voice/` |
 | [Componentes](#3-componentes-quién-conoce-a-quién) | ¿quién conoce a quién? | `plugin/` |
 | [Despliegue](#4-despliegue-dónde-corre-cada-cosa) | ¿dónde corre cada cosa? | `deploy.sh`, `manifest.json` |
+| [Pomodoro](#5-pomodoro-solo-si-lo-pedís) | ¿cómo se elige y qué hace? | `brain/Pomodoro.js`, `Service.qml` |
 
 La prosa con el porqué de cada decisión sigue en [ARQUITECTURA.md](ARQUITECTURA.md).
 
@@ -245,3 +246,45 @@ flowchart TB
   una anterior, no pierde los relojes.
 - **Lo único que sale de la máquina** es el pedido de frase a Claude, y se
   apaga con `useClaude: false`. Ver [privacidad](../MANIFIESTO.md#7-privacidad).
+
+## 5. Pomodoro: solo si lo pedís
+
+Dos máquinas: el selector, que dura unos segundos mientras elegís, y el ciclo.
+Atom nunca entra a ninguna de las dos por su cuenta.
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> off
+
+    off --> eligiendo : scroll sobre el perro
+    eligiendo --> eligiendo : scroll, ±5 min
+    eligiendo --> off : 6 s sin tocar, sacar el puntero o dos dedos
+    eligiendo --> foco : tap
+
+    foco --> descanso : terminó el foco
+    descanso --> off : terminó el descanso
+    foco --> off : dos dedos, dos veces
+    descanso --> off : dos dedos, dos veces
+
+    note right of foco
+        Echado y callado: las reglas
+        no hablan y no pasea.
+    end note
+    note right of descanso
+        Pasea como siempre,
+        pero tampoco habla.
+    end note
+```
+
+- **El estado se guarda** en `~/.local/state/atom/pomodoro.json`, así que un
+  reinicio del shell no corta el foco. Si las dos etapas terminaron con el
+  shell apagado, pasa a `off` sin anunciar nada.
+- **Ladra** al arrancar (`bark-ok`), dos veces al terminar el foco y una al
+  terminar el descanso (`bark-alert`), con `pw-play`. En mudo, no.
+- **Las frases son fijas** y viven en `Pomodoro.js`: la cancelación pasa en el
+  momento y no da tiempo a pedirle nada a Claude.
+- **Con el puntero encima se queda quieto**, incluso a mitad de un paseo: un
+  blanco de 28 px que camina es imposible de agarrar con touchpad. Para eso el
+  área sensible lo sigue a 4 Hz mientras camina, y mientras elegís se agranda
+  a perro + selector.

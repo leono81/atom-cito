@@ -31,8 +31,10 @@ puede salir mal es scope creep.
   horas, no hay "tu semana en números".
 - **No es un asistente.** No responde preguntas, no ejecuta comandos, no abre
   ventanas. Habla, camina, y nada más.
-- **No es un pomodoro.** No impone una estructura de trabajo ni te pide que
-  declares lo que vas a hacer. Observa, no configura.
+- **No es un pomodoro por defecto.** No impone una estructura de trabajo ni te
+  pide que declares lo que vas a hacer: observa, no configura. Si vos le
+  pedís un pomodoro, te acompaña; pero nunca lo propone ni lo arranca solo, y
+  si no lo usás, no existe.
 - **No es un bot de notificaciones.** No compite con el centro de
   notificaciones ni deja nada en el historial.
 - **No juzga.** No existe el concepto de "hoy rendiste poco".

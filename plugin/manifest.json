@@ -27,7 +27,11 @@
       "bubbleSeconds": 14,
       "useClaude": true,
       "sendTitles": true,
-      "model": "haiku"
+      "model": "haiku",
+      "pomodoroScrollPx": 60,
+      "pomodoroPickSeconds": 6,
+      "pomodoroSound": true,
+      "pomodoroVolume": 0.6
     },
     "schema": [
       { "key": "stretchMinutes", "type": "number", "label": "Minutos para sugerir pausa", "description": "Minutos seguidos en la misma app antes de que sugiera estirarse.", "defaultValue": 45 },
@@ -37,7 +41,11 @@
       { "key": "breakSeconds", "type": "number", "label": "Segundos inactivo que cuentan como pausa", "defaultValue": 180 },
       { "key": "bubbleSeconds", "type": "number", "label": "Segundos que dura el globo", "defaultValue": 14 },
       { "key": "useClaude", "type": "boolean", "label": "Escribir las frases con Claude", "description": "Si se apaga, usa solo el banco de frases local y no sale nada de la maquina.", "defaultValue": true },
-      { "key": "sendTitles", "type": "boolean", "label": "Mandarle a Claude el titulo de la ventana", "defaultValue": true }
+      { "key": "sendTitles", "type": "boolean", "label": "Mandarle a Claude el titulo de la ventana", "defaultValue": true },
+      { "key": "pomodoroScrollPx", "type": "number", "label": "Pomodoro: pixeles de scroll por paso", "description": "Cuanto hay que deslizar para sumar o restar 5 minutos. Mas alto, menos sensible.", "defaultValue": 60 },
+      { "key": "pomodoroPickSeconds", "type": "number", "label": "Pomodoro: segundos para elegir", "description": "Sin tocar nada durante este rato, la eleccion se cancela sola.", "defaultValue": 6 },
+      { "key": "pomodoroSound", "type": "boolean", "label": "Pomodoro: ladrar en los avisos", "description": "Un ladrido al arrancar y al terminar el foco y el descanso. En mudo no ladra.", "defaultValue": true },
+      { "key": "pomodoroVolume", "type": "number", "label": "Pomodoro: volumen del ladrido", "description": "De 0 a 1.", "defaultValue": 0.6 }
     ]
   }
 }
