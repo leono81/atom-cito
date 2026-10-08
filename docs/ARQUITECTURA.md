@@ -407,16 +407,20 @@ El modelo por defecto es **haiku**: para una frase de 140 caracteres es el
 que corresponde por costo, y en condiciones normales debería ser el más
 rápido.
 
-Las mediciones con el prompt real no lo confirmaron todavía, pero se tomaron
-con la red mal las dos veces:
+Las mediciones con el prompt real no lo confirmaron todavía:
 
-- Septiembre: haiku 12 a 81 s (mediana ~27); `claude-sonnet-5` 4 a 12 s.
+- Septiembre: haiku 12 a 81 s (mediana ~27); `claude-sonnet-5` 4 a 12 s. Se
+  sospechó una mala ventana del servicio.
 - 2026-10-08, alternando modelos, con problemas de red: haiku mediana ~52 s
   (uno pasó los 90 s); sonnet mediana ~15 s.
 
-Pendiente: medir de nuevo con la red sana. Si haiku sigue pasando los 45 s
-del timeout que le pone `Voice.qml`, casi todo saldría del banco local; ahí conviene
-subir el timeout (la anticipación lo tolera) o volver a sonnet desde
+Por eso el timeout que le pone `Service.qml` a `atom-say` es de **90 s**:
+la frase se pide 3 minutos antes de hacer falta, así que esperar no se nota.
+La excepción es el click, que pide en el momento: la cabriola sale al
+instante y el globo cuando llegue la frase.
+
+Pendiente: medir de nuevo con la red sana. Si haiku sigue pasando los 90 s,
+casi todo saldría del banco local; ahí conviene volver a sonnet desde
 `shell.json` (`"model": "claude-sonnet-5"`).
 
 Igual la anticipación se queda: 12 segundos de globo en blanco también son

@@ -20,7 +20,7 @@ Item {
   property bool useClaude: true
   property bool sendTitles: true
   property string model: ""          // vacío: el que trae atom-say
-  property int timeoutSeconds: 45
+  property int timeoutSeconds: 90
 
   // (ruleId, texto, origen) — origen es "claude" o "local".
   signal said(string ruleId, string text, string source)
