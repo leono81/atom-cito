@@ -26,7 +26,8 @@ ShellRoot {
 
     property color bg: "#12161b"
     property color ink: "#e8e2d6"
-    property string shotDir: "/home/leono/Projects/atom/harness/shots/"
+    /* Al lado de este archivo, sea donde sea que esté clonado el repo. */
+    property string shotDir: String(Qt.resolvedUrl("shots/")).replace(/^file:\/\//, "")
 
     property string mode: "all"
     property var modeArgs: mode.split(":")

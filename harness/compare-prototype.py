@@ -10,9 +10,11 @@ abajo el SVG.
 
 import re
 import subprocess
+from pathlib import Path
 
-HTML = "/home/leono/Projects/atom/docs/perro.html"
-SHOTS = "/home/leono/Projects/atom/harness/shots/"
+AQUI = Path(__file__).resolve().parent
+HTML = str(AQUI.parent / "docs" / "perro.html")
+SHOTS = str(AQUI / "shots") + "/"
 BG, INK = "#12161b", "#e8e2d6"
 W, H = 238, 168
 
