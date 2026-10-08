@@ -416,26 +416,29 @@ De ahí el presupuesto:
 ### La latencia de `claude -p` obliga a anticipar
 
 El modelo por defecto es **haiku**: para una frase de 140 caracteres es el
-que corresponde por costo, y en condiciones normales debería ser el más
-rápido.
+que corresponde por costo, y es el más rápido. Con el prompt real tarda
+**4 a 5,5 s**, casi todo el arranque del CLI (sonnet: 5 a 6,5 s).
 
-Las mediciones con el prompt real no lo confirmaron todavía:
+Durante un tiempo pareció lo contrario: haiku tardaba 16 a 81 s y sonnet 5.
+No era la red ni el modelo: **Claude Code tiene el thinking prendido por
+defecto**, y haiku escribía 3000 a 6000 tokens de razonamiento oculto antes
+de una frase de 30 tokens (sonnet decide solo cuándo pensar y no lo hacía).
+`--effort low` no alcanza; `atom-say` lanza `claude` con
+`MAX_THINKING_TOKENS=0`. Medido el 2026-10-08 con `--output-format json`:
 
-- Septiembre: haiku 12 a 81 s (mediana ~27); `claude-sonnet-5` 4 a 12 s. Se
-  sospechó una mala ventana del servicio.
-- 2026-10-08, alternando modelos, con problemas de red: haiku mediana ~52 s
-  (uno pasó los 90 s); sonnet mediana ~15 s.
+| | tiempo | tokens de salida |
+|---|---|---|
+| haiku, con thinking | 16 a 49 s | 3149 a 4263 |
+| haiku, `--effort low` | 16 y 50 s | 1177 y 6001 |
+| haiku, `MAX_THINKING_TOKENS=0` | 4 a 5,5 s | 30 a 35 |
 
-Por eso el timeout que le pone `Service.qml` a `atom-say` es de **90 s**:
-la frase se pide 3 minutos antes de hacer falta, así que esperar no se nota.
-La excepción es el click, que pide en el momento: la cabriola sale al
+El timeout que le pone `Service.qml` a `atom-say` quedó en **90 s**, de
+cuando haiku pensaba. Sobra, pero no molesta: la frase se pide 3 minutos
+antes de hacer falta, y un timeout corto solo manda más frases al banco
+local. La excepción es el click, que pide en el momento: la cabriola sale al
 instante y el globo cuando llegue la frase.
 
-Pendiente: medir de nuevo con la red sana. Si haiku sigue pasando los 90 s,
-casi todo saldría del banco local; ahí conviene volver a sonnet desde
-`shell.json` (`"model": "claude-sonnet-5"`).
-
-Igual la anticipación se queda: 12 segundos de globo en blanco también son
+Igual la anticipación se queda: 5 segundos de globo en blanco también son
 demasiados, y no cuesta nada tenerla.
 
 Un globo que aparece 30 s tarde no sirve. Pero las reglas son **predecibles**:
